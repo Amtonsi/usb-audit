@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Журнал USB</title>
+<style>
+:root{color-scheme:light;--ink:#172f41;--sub:#456172;--line:#cfdbdf;--teal:#006451;--paper:#fff;--wash:#eff4f4;--muted:#627786}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.5 Inter,"Segoe UI",Arial,sans-serif}main{max-width:1510px;margin:auto;padding:32px clamp(14px,4vw,66px) 56px}h1,h2,p{margin:0}h1{font-size:clamp(30px,3.5vw,46px);line-height:1.14;letter-spacing:-.045em}h2{font-size:20px;line-height:1.3;letter-spacing:-.02em}.mast{display:flex;justify-content:space-between;align-items:end;gap:16px;margin:6px 0 22px}.sub{color:var(--sub);font-size:13px;margin-top:7px}.demo{font-size:13px;font-weight:650;color:#794500;background:#fff0c7;display:inline-block;border-radius:4px;padding:4px 9px;margin-bottom:10px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);background:#153c45;color:white;border-radius:10px;margin:0 0 18px;padding:17px 0}.metric{padding:0 clamp(13px,2.5vw,32px);border-right:1px solid #48666e}.metric:last-child{border:0}.metric span{display:block;color:#d0e6e8;font-size:13px}.metric strong{display:block;font-size:28px;font-variant-numeric:tabular-nums;line-height:1.24}.box{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden}.boxhead{padding:16px 19px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.panel{padding:14px 19px}.tools{display:flex;flex-wrap:wrap;align-items:end;gap:10px}.tools .wide{min-width:230px;flex:2}.tools .period{min-width:130px}.tools label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--sub);font-weight:600}.tools input,button{font:inherit}.tools input{background:#fff;border:1px solid #aabdc2;color:var(--ink);border-radius:6px;padding:7px 9px;line-height:1.4;min-width:0;max-width:100%}.tools input:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #467bd0;outline-offset:2px}button{cursor:pointer}.btn{border:1px solid #b5c8cc;color:#234753;background:#fff;border-radius:6px;padding:7px 12px;font-size:14px;white-space:nowrap}.btn.strong{background:var(--teal);color:white;border-color:var(--teal);font-weight:600}.btn:hover{filter:brightness(.96)}button:disabled{opacity:.45;cursor:default}.scroller{overflow-x:auto}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{background:#f3f6f6}th{font-size:12px;color:var(--sub);font-weight:650;text-align:left;padding:8px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}td{padding:10px 12px;border-bottom:1px solid #e4eaed;vertical-align:top;overflow-wrap:anywhere}th:first-child,td:first-child{padding-left:19px}th:last-child,td:last-child{padding-right:19px}tbody tr:last-child td{border-bottom:0}.selectable:hover{background:#f6faf9}.selectable{cursor:pointer}.selected,.selected:hover{background:#eaf5f1}.selected td:first-child{box-shadow:inset 3px 0 0 #00785f}.rowbutton{color:#074f57;background:none;border:0;text-align:left;font:inherit;font-weight:650;padding:0;overflow-wrap:anywhere;max-width:100%}.rowbutton:hover{text-decoration:underline}.mono{font:13px/1.5 Consolas,"Courier New",monospace;overflow-wrap:anywhere}.small{font-size:12px;color:var(--sub)}.muted{color:var(--sub)}.status{font-size:12px;font-weight:650;display:inline-block;border-radius:4px;padding:2px 7px;line-height:1.45}.opened{background:#d9eee6;color:#085642}.closed{background:#eaf0f3;color:#385260}.unknown{background:#fff0cf;color:#784b00}.empty{padding:18px 19px;color:var(--sub)}.pages{margin:0;padding:8px 19px;display:flex;justify-content:flex-end;gap:10px;align-items:center;border-top:1px solid var(--line);font-size:13px;color:var(--sub)}.pages .btn{padding:3px 9px}.identity{background:#f3f7f7;display:flex;gap:16px;flex-wrap:wrap;margin:0 19px 14px;padding:9px 12px;border-radius:5px}.identity p{min-width:150px;max-width:100%}.identity b{display:block;color:var(--sub);font-size:12px}.identity span{display:block}.caption{font-size:13px;color:var(--sub)}summary{cursor:pointer;font-weight:600;padding:13px 19px}details ul{margin:0;padding:3px 22px 13px 38px}li{overflow-wrap:anywhere;margin-bottom:6px}.notice{border-color:#d9c89e;background:#fffaf0}#alarm .small{margin-left:6px}.tools .btn{align-self:end}#range-error{color:#9a3029;font-size:13px}footer{font-size:12px;color:var(--muted);margin-top:14px}[hidden]{display:none!important}.device-table{min-width:780px}.history-table{min-width:645px}.file-table{min-width:820px}.time{font-variant-numeric:tabular-nums}
+@media(max-width:720px){main{padding:15px 10px 30px}.mast{align-items:flex-start;flex-wrap:wrap}.metric strong{font-size:22px}.metric span{font-size:12px}.panel,.boxhead{padding:12px}.tools .wide{flex-basis:100%;min-width:0}.tools .period{flex:1;min-width:115px}.identity{margin:0 12px 12px}.scroller{scrollbar-color:#9db4b8 #f5f6f7}.boxhead .sub{margin-top:0}}
+.tools select{font:inherit;font-weight:400;color:var(--ink);background:white;border:1px solid #aabdc2;border-radius:6px;padding:7px 9px;min-height:36px;max-width:100%}.tools select:focus-visible{outline:3px solid #467bd0;outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<header class="mast"><div><span id="demo" class="demo" hidden>Демонстрационные данные</span><h1>Журнал USB</h1><p class="sub" id="as-of"></p></div><button class="btn strong" type="button" id="export">Сохранить копию отчёта</button></header>
+<section class="metrics" aria-label="Всего в открытом отчёте"><div class="metric"><strong id="total-devices">0</strong><span>Носителей</span></div><div class="metric"><strong id="total-sessions">0</strong><span>Подключений</span></div><div class="metric"><strong id="total-files">0</strong><span id="total-files-label">Строк изменений</span></div></section>
+<details id="alarm" class="box notice" hidden><summary>Состояние сбора <span class="small" id="notice-count"></span></summary><ul id="notice-list"></ul><div id="notice-pages"></div></details>
+<section class="box panel" aria-label="Фильтры"><div class="tools"><label>Файловые операции<select id="file-mode"><option value="changes" selected>Изменения файлов</option><option value="all">Все обращения</option></select></label><label class="wide">Поиск<input id="search" type="search" autocomplete="off" placeholder="Идентификатор, серийный номер, файл или учётная запись"></label><label class="period">Дата с<input type="date" id="from"></label><label class="period">Дата по<input type="date" id="to"></label><button type="button" id="reset" class="btn">Сбросить</button></div><p id="range-error" role="alert"></p></section>
+<section class="box" aria-label="Носители"><div class="boxhead"><h2>Носители</h2><p class="caption" id="devices-caption"></p></div>
+<div class="scroller"><table class="device-table" id="devices"><colgroup><col style="width:17%"><col style="width:27%"><col style="width:16%"><col style="width:10%"><col style="width:16%"><col style="width:14%"></colgroup><thead><tr><th>Модель</th><th>Идентификатор СНИ</th><th>Серийный номер</th><th>Сеансов</th><th>Последний сеанс</th><th>Состояние</th></tr></thead><tbody></tbody></table></div><p id="empty-devices" class="empty" hidden></p><div id="device-pages"></div></section>
+<section class="box" id="history" hidden><div class="boxhead"><h2>История подключений</h2><p class="caption" id="history-caption"></p></div>
+<div class="identity"><p><b>Идентификатор СНИ</b><span class="mono" id="device-id"></span></p><p><b>Серийный номер СНИ</b><span class="mono" id="serial"></span></p></div>
+<div class="scroller"><table class="history-table" id="sessions"><colgroup><col style="width:24%"><col style="width:25%"><col style="width:24%"><col style="width:16%"><col style="width:11%"></colgroup><thead><tr><th>Начало наблюдения</th><th>Извлечение</th><th>Состояние сеанса</th><th>Диски</th><th id="session-files-label">Строк изменений</th></tr></thead><tbody></tbody></table></div><div id="session-pages"></div></section>
+<section class="box" id="operations" hidden><div class="boxhead"><h2>Файловые операции</h2><p class="caption" id="file-caption"></p></div>
+<div class="scroller"><table class="file-table" id="files"><colgroup><col style="width:16%"><col style="width:17%"><col style="width:20%"><col style="width:29%"><col style="width:18%"></colgroup><thead><tr><th>Время</th><th>Учётная запись</th><th>Действие</th><th>Файл на носителе</th><th>Процесс</th></tr></thead><tbody></tbody></table></div><p id="empty-files" class="empty" hidden></p><div id="file-pages"></div></section>
+<footer>Время отображается в часовом поясе просмотра. Для получения новых записей сформируйте отчёт повторно.</footer>
+<noscript><p>Для просмотра истории требуется включённый JavaScript в браузере.</p></noscript>
+</main>
+<script type="application/octet-stream" class="log-source" data-name="QWN0aXZlL2V2ZW50cy5qc29ubA==">eyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjAwWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJkZXZpY2VJZCI6ICJVU0JTVE9SXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxERU1PLUIyMTImMCIsICJzZXJpYWwiOiAiREVNTy1CMjEyIiwgIm1vZGVsIjogItCj0YfQtdCx0L3Ri9C5INC90LDQutC+0L/QuNGC0LXQu9GMIEIiLCAidm9sdW1lcyI6IFt7ImxldHRlciI6ICJFOiIsICJwYXRocyI6IFsiRTpcXCIsICJcXFxcP1xcVm9sdW1le2ZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkN31cXCIsICJcXERldmljZVxcSGFyZGRpc2tWb2x1bWU4Il19XX0KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjEyWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0J/Qu9Cw0L0ueGxzeCIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCn0YLQtdC90LjQtSDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDR9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMzoxMDoxOVoiLCAic2Vzc2lvbiI6ICJmZDAzODU2OS1lOTc5LTUwNmYtOGM4ZS0wOGEyOWY1ZjM4ZDciLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCh0LLQvtC00LrQsC5wZGYiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQl9Cw0L/QuNGB0Ywg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA1fQp7InR5cGUiOiAiZGlzY29ubmVjdCIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDM6MzI6MDBaIiwgInNlc3Npb24iOiAiZmQwMzg1NjktZTk3OS01MDZmLThjOGUtMDhhMjlmNWYzOGQ3In0KeyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjEwOjAwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCIsICJkZXZpY2VJZCI6ICJTQ1NJXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxMT0NBTC1JTlNUQU5DRS0wMDMmMCIsICJzZXJpYWwiOiBudWxsLCAibW9kZWwiOiAi0KPRh9C10LHQvdGL0LkgU1NEIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXthNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzB9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lOSJdfV19CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMFQwMToxMDoxMloiLCAic2Vzc2lvbiI6ICJhNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzAiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCf0LvQsNC9Lnhsc3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA2fQp7InR5cGUiOiAiZW5kX3Vua25vd24iLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjIwOjQwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCJ9CnsidHlwZSI6ICJjb25uZWN0IiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNTowMFoiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiZGV2aWNlSWQiOiAiVVNCU1RPUlxcRGlzayZWZW5fRGVtbyZQcm9kX1RyYWluaW5nRGlza1xcREVNTy1BMTA3JjAiLCAic2VyaWFsIjogIkRFTU8tQTEwNyIsICJtb2RlbCI6ICLQo9GH0LXQsdC90YvQuSDQvdCw0LrQvtC/0LjRgtC10LvRjCBBIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXtiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2Z9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lMTAiXX1dfQp7InR5cGUiOiAiZmlsZSIsICJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDU6MTJaIiwgInNlc3Npb24iOiAiYmRiNDI3YTctYjNhNy01ODBkLWE5MDgtZDE5OTkxYmVmOTdmIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJFOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQn9C70LDQvS54bHN4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwN30KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTIxVDA1OjA1OjE5WiIsICJzZXNzaW9uIjogImJkYjQyN2E3LWIzYTctNTgwZC1hOTA4LWQxOTk5MWJlZjk3ZiIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0KHQstC+0LTQutCwLnBkZiIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCX0LDQv9C40YHRjCDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDh9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNToyNloiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCg0LXQtdGB0YLRgC5kb2N4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwOX0K</script>
+<script type="application/octet-stream" class="log-source" data-name="QXJjaGl2ZS8yMDI2LTExLTE3Lmpzb25s">eyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE3VDAyOjA1OjAwWiIsICJzZXNzaW9uIjogImE5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMiIsICJkZXZpY2VJZCI6ICJVU0JTVE9SXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxERU1PLUExMDcmMCIsICJzZXJpYWwiOiAiREVNTy1BMTA3IiwgIm1vZGVsIjogItCj0YfQtdCx0L3Ri9C5INC90LDQutC+0L/QuNGC0LXQu9GMIEEiLCAidm9sdW1lcyI6IFt7ImxldHRlciI6ICJFOiIsICJwYXRocyI6IFsiRTpcXCIsICJcXFxcP1xcVm9sdW1le2E5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMn1cXCIsICJcXERldmljZVxcSGFyZGRpc2tWb2x1bWU2Il19XX0KeyJ0eXBlIjogImRpc2Nvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE3VDAyOjExOjMwWiIsICJzZXNzaW9uIjogImE5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMiJ9CnsidHlwZSI6ICJjb25uZWN0IiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMToxMDowMFoiLCAic2Vzc2lvbiI6ICJmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmIiLCAiZGV2aWNlSWQiOiAiVVNCU1RPUlxcRGlzayZWZW5fRGVtbyZQcm9kX1RyYWluaW5nRGlza1xcREVNTy1BMTA3JjAiLCAic2VyaWFsIjogIkRFTU8tQTEwNyIsICJtb2RlbCI6ICLQo9GH0LXQsdC90YvQuSDQvdCw0LrQvtC/0LjRgtC10LvRjCBBIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRjoiLCAicGF0aHMiOiBbIkY6XFwiLCAiXFxcXD9cXFZvbHVtZXtmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmJ9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lNyJdfV19CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMToxMDoxMloiLCAic2Vzc2lvbiI6ICJmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmIiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkY6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCf0LvQsNC9Lnhsc3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDAxfQp7InR5cGUiOiAiZmlsZSIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDE6MTA6MTlaIiwgInNlc3Npb24iOiAiZjU4NTVmMjMtMWFiYS01YTY5LThkMzQtN2QwZjAzMTRjYzZiIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJGOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQodCy0L7QtNC60LAucGRmIiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0JfQsNC/0LjRgdGMINC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwMn0KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTE5VDAxOjEwOjI2WiIsICJzZXNzaW9uIjogImY1ODU1ZjIzLTFhYmEtNWE2OS04ZDM0LTdkMGYwMzE0Y2M2YiIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRjpcXNCU0L7QutGD0LzQtdC90YLRi1xc0KDQtdC10YHRgtGALmRvY3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDAzfQp7InR5cGUiOiAiZGlzY29ubmVjdCIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDE6MjE6MzBaIiwgInNlc3Npb24iOiAiZjU4NTVmMjMtMWFiYS01YTY5LThkMzQtN2QwZjAzMTRjYzZiIn0K</script>
+<script type="application/octet-stream" id="report-meta">eyJzY29wZSI6ImFsbCIsImhvc3QiOiJBUk0tREVNTyIsImRlbW8iOnRydWUsImFyY2hpdmUiOiIiLCJwcm9ibGVtcyI6W10sInRpbWUiOiIyMDI2LTExLTIyVDA2OjQ3OjM5LjE0MzY4ODQrMDA6MDAifQ==</script>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const str = value => value == null ? '' : String(value);
+const norm = value => str(value).toLocaleLowerCase('ru-RU');
+const nf = new Intl.NumberFormat('ru-RU');
+const dt = new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+function formatTime(ms){return Number.isFinite(ms) ? dt.format(ms) : 'Не зафиксировано'}
+function decode(s){return new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0)))}
+const metaNode = $('report-meta');
+const meta = metaNode ? JSON.parse(decode(metaNode.textContent)) : {time:null,problems:['Открыт шаблон. Для просмотра данных запустите формирование отчёта.']};
+const reportTime = Date.parse(meta.time);
+const scopeLabel=meta.scope==='archive'?'Архив '+str(meta.archive):meta.scope==='active'?'Только текущий журнал':'Текущий журнал и архивы';
+$('as-of').textContent = [scopeLabel,meta.demo ? 'Пример АРМ' : meta.host, Number.isFinite(reportTime) ? formatTime(reportTime) : ''].filter(Boolean).join(' · ');
+$('demo').hidden = !meta.demo;
+const notices = (meta.problems || []).map(message=>({time:NaN,message}));
+const sessions = new Map(), seen = new Set(), seenFile = new Set();
+let totalFiles = 0, totalChanges = 0;
+function getSession(id){
+    if(!sessions.has(id)) sessions.set(id,{key:id,start:null,end:null,unknown:false,items:[],model:'',deviceId:'',serial:'',volumes:[],roots:new Set(),volumeTime:-Infinity});
+    return sessions.get(id);
+}
+// Имена томов Windows встречаются с буквами дисков, GUID, в формате NT и в виде папок монтирования.
+function pathKey(path){
+    let value=norm(path).replace(/\//g,'\\').replace(/\\+$/,'');
+    if(value.startsWith('\\??\\') || value.startsWith('\\\\?\\'))value=value.slice(4);
+    return value;
+}
+function isVolumeRoot(key,roots){
+    return !key || roots.has(key) || /^(?:[a-z]:|volume\{[^\\}]+\}|(?:globalroot\\)?\\?device\\harddiskvolume\d+)$/i.test(key);
+}
+function changeAction(record){
+    let write,remove,removeChild;
+    if(record.accessMask!=null && record.accessMask!==''){
+        const raw=str(record.accessMask).trim();
+        if(!/^(?:0x[\da-f]+|\d+)$/i.test(raw))return '';
+        const mask=Number(raw);
+        if(!Number.isSafeInteger(mask) || mask>0xffffffff)return '';
+        write=!!(mask&6);remove=!!(mask&0x10000);removeChild=!!(mask&0x40);
+    }else{
+        // В ранних журналах и демонстрационных данных встречается только текст действия.
+        const labels=norm(record.action).split(',').map(part=>part.trim());
+        write=labels.some(s=>['запись данных','добавление данных','запись данных / создание файла','добавление данных / создание каталога'].includes(s));
+        remove=labels.includes('использование права удаления');
+    }
+    const rights=[];
+    if(write)rights.push('запись данных');
+    if(remove)rights.push('использование права удаления');
+    if(removeChild)rights.push('использование права удаления дочернего объекта');
+    const action=rights.join(' и ');
+    return action.charAt(0).toUpperCase()+action.slice(1);
+}
+// Окно каждой группы отсчитывается от первого события. Отдельные записи аудита остаются в items.
+function groupChanges(s){
+    const latest=new Map(), groups=[];
+    for(let i=s.items.length-1;i>=0;i--){
+        const e=s.items[i];
+        if(!e.change)continue;
+        const path=pathKey(e.path);
+        if(isVolumeRoot(path,s.roots))continue;
+        const key=JSON.stringify([path,norm(e.account),norm(e.process)]);
+        const previous=latest.get(key);
+        if(e.account && e.process && previous && previous.action===e.change && e.time<=previous.until){
+            previous.count++;previous.time=e.time;
+        }else{
+            const endOfDay=new Date(e.time);
+            endOfDay.setHours(23,59,59,999);
+            const group={time:e.time,until:Math.min(e.time+2000,endOfDay.getTime()),account:e.account,
+                path:e.path,process:e.process,action:e.change,count:1};
+            groups.push(group);latest.set(key,group);
+        }
+    }
+    return groups.sort((a,b)=>b.time-a.time);
+}
+// Группируем записи по идентификатору носителя и отдельным сеансам его подключения.
+function addRecord(record){
+    if(!record || typeof record!=='object') return false;
+    const ms = Date.parse(record.time), type = record.type;
+    if(!Number.isFinite(ms) || !['status','connect','disconnect','end_unknown','file'].includes(type)) return false;
+    if(type!=='status' && (typeof record.session!=='string' || !record.session)) return false;
+    if(record.uid){if(seen.has(record.uid)) return true; seen.add(record.uid)}
+    if(type==='file' && record.recordId!=null && record.logEpoch!=null){
+        const key = JSON.stringify([record.logEpoch,record.recordId]);
+        if(seenFile.has(key)) return true;
+        seenFile.add(key);
+    }
+    if(type==='status' && (record.kind!=='volumes' || !record.session)){
+        notices.push({time:ms,message:str(record.message) || 'Служебное событие'}); return true;
+    }
+    const s = getSession(record.session);
+    for(const k of ['deviceId','serial','model']) if(record[k]) s[k]=str(record[k]);
+    if(Array.isArray(record.volumes)){
+        for(const volume of record.volumes){
+            if(volume?.letter)s.roots.add(pathKey(volume.letter));
+            if(Array.isArray(volume?.paths))for(const path of volume.paths)s.roots.add(pathKey(path));
+        }
+        if(ms>=s.volumeTime){s.volumes=record.volumes;s.volumeTime=ms}
+    }
+    if(type==='connect'){
+        if(s.start===null || ms<s.start){s.start=ms;s.observed=!!record.observedOnly}
+    } else if(type==='disconnect' || type==='end_unknown'){
+        if(s.end===null || ms>s.end || (ms===s.end && type==='disconnect')){
+            s.end=ms;s.unknown=type==='end_unknown';
+            s.endSource=str(record.endSource);
+            s.lastSeen=Date.parse(record.lastSeen);
+        }
+    } else if(type==='file'){
+        const e={time:ms,account:str(record.account),action:str(record.action),path:str(record.path),process:str(record.process),change:changeAction(record)};
+        s.items.push(e); totalFiles++;
+    }
+    return true;
+}
+// Каждый встроенный блок содержит строки журнала. Повреждённые записи учитываем в диагностике.
+function readSource(node){
+    const label = decode(node.dataset.name);
+    const data = node.textContent.trim(), decoder = new TextDecoder('utf-8',{fatal:true});
+    let pending='',bad=0,firstBad=0,lineNumber=0;
+    function line(raw){
+        lineNumber++; if(!raw.trim())return;
+        try{if(!addRecord(JSON.parse(raw)))throw Error()}
+        catch{bad++;if(!firstBad)firstBad=lineNumber}
+    }
+    try{
+        for(let i=0;i<data.length;i+=262144){
+            const raw = Uint8Array.from(atob(data.slice(i,i+262144)),c=>c.charCodeAt(0));
+            const rows = (pending+decoder.decode(raw,{stream:true})).split('\n');
+            pending = rows.pop();for(const row of rows)line(row);
+        }
+        pending+=decoder.decode(); if(pending)line(pending);
+    }catch{notices.push({time:NaN,message:label+' — не удалось прочитать часть журнала.'})}
+    if(bad)notices.push({time:NaN,message:label+' — пропущено записей: '+bad+'. Первая проблемная строка: '+firstBad+'.'});
+}
+document.querySelectorAll('.log-source').forEach(readSource);
+// Подтверждение старой записи действительно только для того диска и того сеанса,
+// во время которого Windows зарегистрировала удаление. Архив может содержать неполные сеансы.
+function applyRemovalEvidence(evidence){
+    if(!Array.isArray(evidence) || !evidence.length)return;
+    const intervals=new Map(), candidates=new Map();
+    for(const item of evidence){
+        if(!item)continue;
+        const s=sessions.get(item.session), when=Date.parse(item.time), seen=Date.parse(item.lastSeen);
+        if(!s || !s.unknown || s.endSource || !s.deviceId || norm(item.deviceId)!==norm(s.deviceId)
+            || seen!==s.end || !Number.isFinite(when) || when<seen || when-seen>8000)continue;
+        const id=norm(s.deviceId);
+        if(!intervals.has(id))intervals.set(id,{starts:[],ends:[]});
+        if(candidates.has(s.key) && candidates.get(s.key)!==when)candidates.set(s.key,null);
+        else candidates.set(s.key,when);
+    }
+    for(const s of sessions.values()){
+        const group=intervals.get(norm(s.deviceId));
+        if(group){group.starts.push(s.start??-Infinity);group.ends.push(s.end??Infinity)}
+    }
+    function countThrough(sorted,time){
+        let lo=0,hi=sorted.length;
+        while(lo<hi){const mid=lo+Math.floor((hi-lo)/2);if(sorted[mid]<=time)lo=mid+1;else hi=mid}
+        return lo;
+    }
+    for(const group of intervals.values()){group.starts.sort((a,b)=>a-b);group.ends.sort((a,b)=>a-b)}
+    for(const [key,when] of candidates){
+        if(when===null)continue;
+        const s=sessions.get(key), group=intervals.get(norm(s.deviceId));
+        // Считаем сеансы, пересекающие интервал от последнего наблюдения до события PnP.
+        if(countThrough(group.starts,when)-countThrough(group.ends,s.end-1)!==1)continue;
+        s.lastSeen=s.end;s.end=when;s.unknown=false;s.endSource='kernelPnp';
+    }
+}
+applyRemovalEvidence(meta.removalEvidence);
+const allDevices = new Map();
+function state(s){return s.end===null ? (s.start===null || meta.scope==='archive'?'unknown':'opened') : (s.unknown?'unknown':'closed')}
+const stateNames={opened:'Открыт',closed:'Извлечён',unknown:'Не определено'};
+for(const s of sessions.values()){
+    s.items.sort((a,b)=>b.time-a.time);
+    s.changes=groupChanges(s);totalChanges+=s.changes.length;
+    s.recent=s.start ?? s.end ?? s.items[0]?.time ?? 0;
+    const deviceKey = s.deviceId ? JSON.stringify([norm(s.deviceId),norm(s.serial)]) : 'session:'+s.key;
+    if(!allDevices.has(deviceKey))allDevices.set(deviceKey,{key:deviceKey,model:s.model,deviceId:s.deviceId,serial:s.serial,sessions:[]});
+    allDevices.get(deviceKey).sessions.push(s);
+}
+for(const d of allDevices.values()){
+    d.sessions.sort((a,b)=>b.recent-a.recent);
+    d.recent=d.sessions[0].recent;d.state=d.sessions.some(s=>state(s)==='opened')?'opened':state(d.sessions[0]);
+}
+notices.sort((a,b)=>(Number.isFinite(b.time)?b.time:Infinity)-(Number.isFinite(a.time)?a.time:Infinity));
+$('total-devices').textContent=nf.format(allDevices.size);$('total-sessions').textContent=nf.format(sessions.size);
+const pageSize = {device:15,session:15,file:40,notice:15};
+const page = {device:0,session:0,file:0,notice:0};
+let selectedDevice='',selectedSession='',visible=[],key='',lower=-Infinity,upper=Infinity;
+let showAll=false;
+function fileRows(s){return showAll?s.items:s.changes}
+function el(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e}
+function cell(tr,value,cls){
+    const node=el('td',null,cls);value instanceof Node ? node.append(value) : node.textContent=str(value);tr.append(node);return node;
+}
+function badge(s){return el('span',stateNames[s],'status '+s)}
+function createRow(body,chosen,title,click){
+    const tr=el('tr',null,'selectable'+(chosen?' selected':''));
+    const pick=el('button',title,'rowbutton');pick.type='button';pick.setAttribute('aria-pressed',String(chosen));
+    tr.addEventListener('click',click);cell(tr,pick);body.append(tr);return tr;
+}
+function buttons(target,group,total,refresh){
+    const box=$(target);box.replaceChildren();
+    const max=Math.ceil(total/pageSize[group]); if(max<2)return;
+    const nav=el('div',null,'pages');
+    for(const [label,offset] of [['Назад',-1],['Далее',1]]){
+        const b=el('button',label,'btn');b.type='button';b.disabled=page[group]+offset<0 || page[group]+offset>=max;
+        b.addEventListener('click',()=>{page[group]+=offset;refresh();});
+        if(offset===1)nav.append(el('span',(page[group]+1)+' из '+max));
+        nav.append(b);
+    }
+    box.append(nav);
+}
+function paged(arr,g){return arr.slice(page[g]*pageSize[g],(page[g]+1)*pageSize[g])}
+function drawNotices(){
+    $('alarm').hidden=notices.length===0;$('notice-count').textContent=nf.format(notices.length);
+    const list=$('notice-list');list.replaceChildren();
+    for(const n of paged(notices,'notice'))list.append(el('li',(Number.isFinite(n.time)?formatTime(n.time)+' · ':'')+n.message));
+    buttons('notice-pages','notice',notices.length,drawNotices);
+}
+function fileMatches(e){return [e.account,e.path,e.action,e.process].some(v=>norm(v).includes(key))}
+function dateBound(value,end){
+    if(!value)return end?Infinity:-Infinity;
+    const parts=value.split('-').map(Number);
+    return new Date(parts[0],parts[1]-1,parts[2]+(end?1:0)).getTime()-(end?1:0);
+}
+// Поиск и временной интервал ограничивают выборку до разбиения таблиц на страницы.
+function filterReport(keepSelection=false){
+    showAll=$('file-mode').value==='all';
+    const countLabel=showAll?'Исходных обращений':'Строк изменений';
+    $('total-files').textContent=nf.format(showAll?totalFiles:totalChanges);
+    $('total-files-label').textContent=countLabel;$('session-files-label').textContent=countLabel;
+    key=norm($('search').value.trim());lower=dateBound($('from').value,false);upper=dateBound($('to').value,true);
+    $('range-error').textContent=lower>upper?'Начальная дата позже конечной. Проверьте период.':'';
+    visible=[];page.device=0;page.session=0;page.file=0;
+    for(const d of allDevices.values()){
+        const deviceMatch=!key || [d.deviceId,d.serial,d.model].some(v=>norm(v).includes(key));
+        const hits=d.sessions.filter(s=>{
+            const start=s.start ?? Math.min(s.end ?? Infinity,s.items[s.items.length-1]?.time ?? Infinity);
+            const end=s.end ?? (Number.isFinite(reportTime)? reportTime:Infinity);
+            return lower<=upper && start<=upper && end>=lower && (deviceMatch || fileRows(s).some(e=>e.time>=lower && e.time<=upper && fileMatches(e)));
+        });
+        if(hits.length)visible.push({device:d,hits,deviceMatch});
+    }
+    visible.sort((a,b)=>Number(b.device.state==='opened')-Number(a.device.state==='opened') || b.hits[0].recent-a.hits[0].recent);
+    const deviceIndex=keepSelection===true?visible.findIndex(v=>v.device.key===selectedDevice):-1;
+    const v=visible[Math.max(0,deviceIndex)];
+    const sessionIndex=keepSelection===true && v?v.hits.findIndex(s=>s.key===selectedSession):-1;
+    page.device=Math.floor(Math.max(0,deviceIndex)/pageSize.device);
+    page.session=Math.floor(Math.max(0,sessionIndex)/pageSize.session);
+    selectedDevice=v?.device.key || '';selectedSession=v?.hits[Math.max(0,sessionIndex)]?.key || '';
+    drawDevices();
+}
+function drawDevices(){
+    const body=$('devices').tBodies[0];body.replaceChildren();
+    const rows=paged(visible,'device');if(!rows.some(v=>v.device.key===selectedDevice)){selectedDevice=rows[0]?.device.key || '';selectedSession='';page.session=0;page.file=0;}
+    for(const v of rows){
+        const d=v.device;
+        const tr=createRow(body,d.key===selectedDevice,d.model||'Модель не указана',()=>{selectedDevice=d.key;selectedSession='';page.session=0;page.file=0;drawDevices()});
+        cell(tr,d.deviceId||'Не зафиксирован','mono');cell(tr,d.serial||'Не предоставлен устройством','mono');cell(tr,nf.format(v.hits.length));
+        cell(tr,formatTime(v.hits[0].recent),'time');cell(tr,badge(d.state));
+    }
+    $('devices-caption').textContent=nf.format(visible.length)+' из '+nf.format(allDevices.size);
+    $('empty-devices').hidden=!!rows.length;
+    $('empty-devices').textContent=allDevices.size?'По заданным условиям носители не найдены.'+(!showAll && key?' Для поиска по чтению и другим обращениям выберите «Все обращения».':''):'В доступных журналах пока нет записей о подключениях.';
+    buttons('device-pages','device',visible.length,drawDevices);drawSessions();
+}
+function volumes(s){
+    return [...new Set(s.volumes.map(v=>v.letter||(Array.isArray(v.paths)?v.paths.find(x=>/^[a-z]:/i.test(x)):null)).filter(Boolean))].join(', ')||'—';
+}
+// Для выбранного СНИ показываем время подключения, состояние и тома каждого сеанса.
+function drawSessions(){
+    const v=visible.find(x=>x.device.key===selectedDevice);
+    $('history').hidden=!v;$('operations').hidden=!v;if(!v)return;
+    $('device-id').textContent=v.device.deviceId||'Не зафиксирован';$('serial').textContent=v.device.serial||'Не предоставлен устройством';
+    $('history-caption').textContent=v.device.model || '';
+    const body=$('sessions').tBodies[0];body.replaceChildren();
+    const rows=paged(v.hits,'session');if(!rows.some(s=>s.key===selectedSession)){selectedSession=rows[0]?.key || '';page.file=0}
+    for(const s of rows){
+        const tr=createRow(body,s.key===selectedSession,formatTime(s.start),()=>{selectedSession=s.key;page.file=0;drawSessions()});
+        if(s.start===null)tr.firstChild.append(el('div','В доступных журналах нет начала сеанса','small'));
+        else if(s.observed)tr.firstChild.append(el('div','Уже обнаружен при сверке','small'));
+        const endCell=cell(tr,s.unknown?'Не зафиксировано':s.end===null?'—':formatTime(s.end),'time');
+        if(!s.unknown && s.endSource==='inventory'){
+            endCell.append(el('div','Обнаружено при опросе','small'));
+            if(Number.isFinite(s.lastSeen) && s.lastSeen<=s.end)
+                endCell.append(el('div','Последнее присутствие: '+formatTime(s.lastSeen),'small'));
+        }else if(s.endSource==='kernelPnp')endCell.append(el('div','Событие Windows 1010','small'));
+        const st=cell(tr,badge(state(s)));if(s.unknown)st.append(el('div','Последнее наблюдение: '+formatTime(s.end),'small'));
+        else if(meta.scope==='archive' && s.end===null)st.append(el('div','В выбранном архиве нет конца сеанса','small'));
+        cell(tr,volumes(s),'mono');cell(tr,nf.format(fileRows(s).length));
+    }
+    buttons('session-pages','session',v.hits.length,drawSessions);drawFiles();
+}
+function drawFiles(){
+    const s=sessions.get(selectedSession);if(!s)return;
+    const v=visible.find(x=>x.device.key===selectedDevice);
+    const entries=fileRows(s);
+    const hits=entries.filter(e=>e.time>=lower && e.time<=upper && (v.deviceMatch||fileMatches(e)));
+    const body=$('files').tBodies[0];body.replaceChildren();
+    for(const e of paged(hits,'file')){
+        const tr=el('tr');cell(tr,formatTime(e.time),'time');cell(tr,e.account||'—');
+        const action=cell(tr,e.action||'—');
+        if(e.count>1)action.append(el('div','Обращений: '+nf.format(e.count),'small'));
+        cell(tr,e.path||'—','mono');cell(tr,e.process||'—','mono');body.append(tr);
+    }
+    $('file-caption').textContent=(s.start===null?'Начало сеанса не зафиксировано':'Сеанс от '+formatTime(s.start))+' · Строк: '+nf.format(hits.length)+' из '+nf.format(entries.length)
+        +(showAll?'':' · Исходных обращений в сеансе: '+nf.format(s.items.length));
+    $('empty-files').hidden=!!hits.length;
+    if(!s.items.length)$('empty-files').textContent='За это подключение файловых обращений не зарегистрировано.';
+    else if(!showAll && !s.changes.length)$('empty-files').textContent='Изменений файлов не обнаружено. Чтобы увидеть чтение и служебные обращения, выберите «Все обращения».';
+    else $('empty-files').textContent='В заданном периоде и по текущему поиску строк не найдено.';
+    buttons('file-pages','file',hits.length,drawFiles);
+}
+let filterTimer;
+$('file-mode').addEventListener('change',()=>{clearTimeout(filterTimer);filterReport(true)});
+$('search').addEventListener('input',()=>{clearTimeout(filterTimer);filterTimer=setTimeout(filterReport,160)});
+for(const k of ['from','to'])$(k).addEventListener('change',filterReport);
+$('reset').onclick=()=>{clearTimeout(filterTimer);for(const k of ['search','from','to'])$(k).value='';$('file-mode').value='changes';filterReport()};
+$('export').onclick=()=>{
+    const copy=document.documentElement.cloneNode(true);
+    for(const sel of ['table tbody','#notice-list','#device-pages','#session-pages','#file-pages','#notice-pages'])copy.querySelectorAll(sel).forEach(node=>node.replaceChildren());
+    const url=URL.createObjectURL(new Blob(['<!doctype html>\n',copy.outerHTML],{type:'text/html;charset=utf-8'}));
+    const a=el('a');a.href=url;a.download='Журнал USB.html';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+};
+drawNotices();filterReport();
+</script>
+</body>
+</html>

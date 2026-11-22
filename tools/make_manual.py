@@ -1,0 +1,273 @@
+"""Make the self-contained Russian manual from the sources used by Build.ps1."""
+
+import argparse
+import base64
+import hashlib
+import html
+import io
+from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from manual_flows import algorithm
+
+
+BASE = Path(__file__).resolve().parents[1]
+OUTPUTS = BASE / "dist"
+RELEASE = "v1.0.0"
+AUTHOR = "Амаль А. (Amtonsi)"
+FILES = {
+    "Launcher.cs": "Открывает главное окно, проверяет встроенные ресурсы и вызывает установку, просмотр и обслуживание.",
+    "Build.ps1": "Компилирует приложение и встраивает в EXE сценарии и шаблон отчёта.",
+    "Install.ps1": "Устанавливает компоненты, настраивает аудит Windows, права NTFS и задания Планировщика.",
+    "Access.ps1": "Определяет защищённые пути, права учётных записей и общие операции с файлами.",
+    "Collector.ps1": "Обнаруживает USB-диски и тома, регистрирует сеансы и сопоставляет их с событиями доступа к файлам.",
+    "Report.ps1": "Читает доступные журналы и собирает автономный HTML-отчёт из исходных записей и шаблона.",
+    "viewer.html": "Отображает носители, историю подключений и файловые операции, выполняет поиск и экспорт копии.",
+    "Maintenance.ps1": "Закрывает активный журнал и обрабатывает удаление выбранного архива с проверкой полномочий.",
+    "Check.ps1": "Проверяет параметры аудита, наличие установленных компонентов и состояние сбора на АРМ.",
+}
+
+CSS = r"""
+:root{--ink:#16333a;--text:#253940;--muted:#495e62;--line:#cbd9d6;--green:#0c604f;--soft:#edf5f1;--paper:#fff;--back:#f5f7f5}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:var(--back);color:var(--text);font:16px/1.62 "Segoe UI",Arial,sans-serif}
+a{color:var(--green);text-underline-offset:.18em}a:focus-visible,button:focus-visible{outline:3px solid #c88722;outline-offset:3px}button,a.button{font:inherit}
+.wrap{width:min(1450px,100%);margin:auto;display:grid;grid-template-columns:minmax(210px,260px) minmax(0,1fr);gap:clamp(20px,4vw,70px);padding:0 clamp(16px,4vw,68px)}
+aside{align-self:start;position:sticky;top:0;padding:36px 0 24px;max-height:100vh;overflow:auto}
+nav{border-left:2px solid var(--line);padding-left:16px}nav strong{display:block;font-size:.92rem;color:var(--ink);margin:0 0 8px}nav a{display:block;text-decoration:none;font-size:.93rem;padding:3px 0}nav a:hover{text-decoration:underline}
+.file-nav{margin-top:20px}.file-nav a{font:13px/1.45 Consolas,"Courier New",monospace;padding:2px 0}
+main{min-width:0;padding:32px 0 64px}header,.sheet,.source{padding:clamp(20px,3vw,40px);background:var(--paper);border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+header{background:#143d43;color:#fff;border:none;padding-bottom:30px}header p{color:#d4e7e2;max-width:63ch;margin:.8em 0 0}header p a{color:inherit}
+h1,h2,h3{line-height:1.2;font-weight:650;letter-spacing:-.025em}h1{font-size:clamp(38px,5.3vw,70px);margin:0}h2{font-size:clamp(24px,3vw,36px);margin:0 0 18px;color:var(--ink)}h3{font-size:1.14rem;margin:1.6em 0 .35em;color:var(--ink)}
+p{margin:.55em 0 1em}li{margin:.45em 0}ol,ul{padding-left:1.55em}ol li::marker{font-weight:700;color:var(--green)}
+code,kbd,pre,.hash{font-family:Consolas,"Courier New",monospace}p code,li code,td code{background:var(--soft);border-radius:3px;padding:.08em .23em;font-size:.92em;overflow-wrap:anywhere}
+.hash{color:var(--muted);font-size:.81rem;overflow-wrap:anywhere;letter-spacing:.015em}.hash strong{font-family:"Segoe UI",Arial,sans-serif}
+table{width:100%;border-collapse:collapse;table-layout:auto;text-align:left;margin:1em 0}th,td{border-bottom:1px solid var(--line);padding:9px 10px 9px 0;vertical-align:top;overflow-wrap:anywhere}th{color:var(--muted);font-size:.86rem}td:last-child{padding-right:0}
+.note{border-left:3px solid #2c7968;background:var(--soft);padding:12px 16px;margin:1em 0}.note p{margin:0}
+.commands{background:#f0f4f3;border:1px solid var(--line);padding:12px 14px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.8em 0}.button{display:inline-block;border:1px solid #a5beb6;background:#fff;border-radius:5px;color:var(--green);padding:6px 12px;font-size:.9rem!important;line-height:1.4;text-decoration:none;cursor:pointer}.button:hover{background:var(--soft)}header .button{margin-top:15px}
+.source{scroll-margin-top:8px}.source h3{font:600 clamp(20px,2.3vw,30px)/1.2 Consolas,"Courier New",monospace;margin:0;color:var(--ink)}
+.listing{margin:16px -10px 0;background:#f6f8f7;border:1px solid var(--line);border-radius:5px;padding:14px 12px;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;color:#1b3034;font:13px/1.48 Consolas,"Courier New",monospace}
+.skip{position:absolute;left:8px;top:-100px;background:white;padding:6px 10px}.skip:focus{top:8px}.subtle{color:var(--muted);font-size:.92rem}
+@media(max-width:820px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}aside{position:static;max-height:none;order:0;padding:18px 0 0}nav{border:0;padding:0}nav>div:first-child a{display:inline-block;margin-right:12px}nav .file-nav{display:none}main{padding-top:18px}table{font-size:.92rem}.listing{font-size:12px}}
+@page{size:A4;margin:14mm}
+@media print{html,body{background:white;color:#111}.wrap,main{display:block;width:100%;padding:0}.skip,aside,.actions,.button,.screen-only{display:none!important}
+header,.sheet,.source{color:#111;background:white;border:0;box-shadow:none;border-radius:0;padding:0;margin:0 0 5mm}header p,.hash,.subtle{color:#333}
+h1{font-size:26pt}h2{font-size:18pt}h3,.source h3{font-size:13pt}body{font-size:10pt;line-height:1.4}h2,h3,thead{break-after:avoid}tr{break-inside:avoid}
+.source{break-before:page}.listing,.commands{padding:0;border:0;background:white;white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere;word-break:break-word;font:7.7pt/1.27 Consolas,"Courier New",monospace;break-inside:auto}
+.listing code{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.hash{font-size:7pt}a{color:inherit}.note{background:white}pre{orphans:2;widows:2}}
+"""
+
+CSS += r"""
+.flow-figure{margin:0;padding:18px 0 24px}.flow-figure+.flow-figure{border-top:1px solid var(--line)}
+.flow-figure h3{margin:0;color:var(--ink);font-size:1.22rem}.flow-figure figcaption p{max-width:75ch;margin:.4em 0 .85em}
+#algorithm>h2{margin-bottom:0}.flow-scroll{overflow-x:auto;background:#f7faf8;border:1px solid var(--line);border-radius:8px;padding:10px 4px;scrollbar-width:thin}
+.flow-scroll:focus-visible{outline:3px solid #c88722;outline-offset:2px}
+.flow-hint{display:none}@media screen and (max-width:600px){.flow-hint{display:block;margin:.4em 0;color:var(--ink)}}
+.audit-flow{display:block;width:100%;min-width:540px;max-width:780px;height:auto;margin:auto;font:16px "Segoe UI",Arial,sans-serif}
+.flow-node>rect,.flow-node>polygon{fill:white;stroke:#638b83;stroke-width:1.5}.flow-node.end>rect{fill:#e6f1ec}
+.flow-node.decision>polygon{fill:#fbf2da;stroke:#997618}.flow-text{fill:#193a3e}
+.flow-edge{fill:none;stroke:#32645e;stroke-width:1.8;stroke-linejoin:round}
+.flow-branch{font-size:15px;font-weight:650;fill:#244c47;paint-order:stroke;stroke:#f7faf8;stroke-width:6px;stroke-linejoin:round}
+@media print{.flow-figure{break-inside:avoid;page-break-inside:avoid;padding:3mm 0}.flow-figure figcaption{break-after:avoid}
+.flow-figure h3{font-size:13pt}.flow-figure figcaption p{margin:1mm 0 2mm}.flow-scroll{border:0;overflow:visible;padding:0;background:white}
+.audit-flow{width:160mm;max-width:100%;min-width:0}.flow-branch{stroke:white}.flow-figure+.flow-figure{border:0}}
+"""
+
+DOCUMENT = r"""
+<section class="sheet" id="start"><h2>Первый запуск</h2>
+<p>На АРМ понадобятся Windows 10 или 11 x64, штатная Windows PowerShell 5.1, Планировщик заданий и том NTFS для журнала. Просмотр работает в современном браузере с включённым JavaScript.</p>
+<p>Перед первой установкой администратору следует сохранить исходные настройки, которые понадобятся при снятии ПО с АРМ. В повышенной Windows PowerShell выполните команды ниже и сохраните вывод отдельно от папок программы. Запишите режим аудита для обеих подкатегорий, разрешения журнала «Безопасность», тип и значение <code>HotPlugSecureOpen</code> либо его отсутствие, а также наличие источника событий обслуживания.</p>
+<pre class="commands"><code>auditpol.exe /get '/subcategory:{0CCE9245-69AE-11D9-BED3-505054503030}'
+auditpol.exe /get '/subcategory:{0CCE9248-69AE-11D9-BED3-505054503030}'
+(Get-WinEvent -ListLog Security -Force).SecurityDescriptor
+reg.exe query 'HKLM\SYSTEM\CurrentControlSet\Control\Storage' /v HotPlugSecureOpen
+[Diagnostics.EventLog]::SourceExists('LocalUsbAuditMaintenance')</code></pre>
+<ol>
+<li>На рабочем АРМ администратор копирует <code>USB-Audit.exe</code> в локальную папку, где операторам разрешены чтение и запуск, а запись разрешена администраторам. Это особенно важно, когда администратор подтверждает UAC в сеансе другого пользователя. Выполните в этой папке команду PowerShell, приведённую ниже, и сравните SHA-256 файла с опубликованным значением для этой версии.</li>
+<li>Войдите под учётной записью сотрудника, которому нужен отчёт, и дважды щёлкните <code>USB-Audit.exe</code>. В окне «Журнал USB» нажмите <strong>«Установить»</strong>. Подтвердите запрос UAC или введите учётные данные администратора. Программа назначит права чтения пользователю, открывшему окно.</li>
+<li>В окне <strong>«Ответственный за архивы»</strong> раскройте список и выберите существующую учётную запись администратора этого компьютера. Под списком появится SID — идентификатор выбранной учётной записи Windows. Сверьте имя и SID, затем нажмите «Продолжить». Сборщик работает от имени службы. Оператор получает права чтения, а выбранный администратор подтверждает закрытие журнала и удаление архива.</li>
+<li>Дождитесь результата установки. После первого добавления в группу чтения выйдите из сеанса Windows и войдите снова, чтобы обновились права пользователя. Откройте EXE, нажмите <strong>«Проверить»</strong>, подключите контрольную флешку и выполните <a href="#test">проверку регистрации</a>.</li>
+</ol>
+<pre class="commands"><code>Get-FileHash -LiteralPath .\USB-Audit.exe -Algorithm SHA256</code></pre>
+<p class="hash"><strong>SHA-256 этой поставки</strong> @EXE_HASH@</p>
+<p>Установщик помещает рабочие файлы на АРМ, включает успешный аудит Plug and Play и съёмных носителей и создаёт задания <code>LocalUsbAuditCollector</code> и <code>LocalUsbAuditMaintenance</code>. После того как сборщик подтвердит чтение журнала «Безопасность» и запись в собственный журнал, установщик задаёт <code>HotPlugSecureOpen=1</code> и дважды проверяет, сохранилось ли значение. Если Windows сбрасывает его, установщик повторяет настройку. После трёх неудачных попыток выводится ошибка.</p>
+<p>Сборщик запускается от службы <code>LOCAL SERVICE</code> при загрузке Windows и продолжает работать после выхода пользователя. Для просмотра и экспорта отчёта установщик создаёт локальную группу <code>LocalUsbAuditReaders</code> и добавляет в неё выбранного читателя.</p>
+<h3>Кого можно назначить</h3>
+<p>В списке отображаются включённые пользователи этого компьютера, которые непосредственно входят в его группу «Администраторы». УЗ для подтверждения UAC и УЗ ответственного могут различаться. При первой установке нажмите имя в списке даже при единственном варианте. «Отмена» закрывает окно до установки.</p>
+<p>При назначении ответственного достаточно выбрать его УЗ. Для закрытия журнала и удаления архива понадобится пароль Windows этой УЗ. Для просмотра и копирования отчёта достаточно прав читателя.</p>
+<h3>Как сменить ответственного</h3>
+<p>Нажмите «Проверить». Строка «Ответственный за архивы» показывает назначенное имя, SID и результат проверки действующего членства в группе администраторов. Для смены ответственного нажмите «Обновить», подтвердите UAC и выберите другую УЗ. При обычном обновлении программа выделяет действующего ответственного, если его SID по-прежнему доступен. После смены архивы остаются в истории. Следующая операция через программу потребует пароль нового ответственного.</p>
+<p>Если ответственного отключили, удалили или исключили из группы администраторов, откройте «Обновить» и назначьте действующую УЗ. Учётная запись, заново созданная с прежним именем, получает другой SID и также требует явного выбора. При пустом списке нажмите «Отмена» и проверьте у администратора АРМ наличие включённого пользователя с прямым членством в локальной группе «Администраторы».</p>
+<h3 id="cli">Установка из командной строки</h3>
+<p>Для установки без окна выбора нужны два SID. В сеансе сотрудника, которому нужен доступ к журналу, команда <code>whoami.exe /user</code> покажет SID читателя. Затем откройте 64-разрядную Windows PowerShell от имени администратора в папке с EXE. Команда <code>--list-admins</code> перечислит имена и SID подходящих ответственных. Передайте <code>--install</code> сначала SID читателя, затем SID ответственного. В командной строке передаются только идентификаторы.</p>
+<pre class="commands"><code>$previousEncoding = [Console]::OutputEncoding
+try {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    .\USB-Audit.exe --list-admins | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Список администраторов недоступен.' }
+    $readerSid = Read-Host 'SID сотрудника из вывода whoami /user'
+    $adminSid = Read-Host 'SID ответственного из вывода --list-admins'
+    .\USB-Audit.exe --install $readerSid $adminSid | Out-Host
+    $result = $LASTEXITCODE
+} finally {
+    [Console]::OutputEncoding = $previousEncoding
+}
+$result</code></pre>
+<p>Код 0 означает успех. При ошибке установки EXE возвращает 1 и выводит её причину. С одним SID читателя команда <code>--install</code> открывает окно выбора ответственного. При отмене выбора возвращается код 3.</p>
+</section>
+<section class="sheet" id="report"><h2>Как читать историю</h2>
+<ol><li>Откройте <code>USB-Audit.exe</code> и нажмите <strong>«Открыть журнал»</strong>. В таблице «Носители» видны модель, полный идентификатор экземпляра устройства, аппаратный серийный номер и количество сеансов. Если накопитель не сообщает номер, появится отметка «Не предоставлен устройством».</li>
+<li>Нажмите строку носителя. В «Истории подключений» выберите нужный сеанс по времени начала и букве диска. Один и тот же носитель может получить разные буквы при разных подключениях.</li>
+<li>В таблице «Файловые операции» по умолчанию видны <strong>«Изменения файлов»</strong>. Найдите имя файла, проверьте его путь, действие, учётную запись и процесс. Чтобы посмотреть отдельные события Windows, в панели фильтров рядом с поиском выберите <strong>«Все обращения»</strong>.</li></ol>
+<h3>Как выглядит копирование одного файла на носитель</h3>
+<p>Допустим, вы скопировали через Проводник файл <code>План.txt</code>. За одну секунду Windows зарегистрировала чтение корня тома и два обращения к файлу — запись и добавление данных. В «Изменениях файлов» появится одна строка «Запись данных» для <code>План.txt</code> с числом обращений 2. В режиме «Все обращения» видны обе записи по файлу и обращения к корню тома.</p>
+<p>Сводка объединяет события одного вида по одному пути, от одной учётной записи и одного процесса в одном сеансе. В такую строку попадают обращения в пределах двух секунд от первого и одной календарной даты. В графе «Время» указано время последнего обращения группы. Отдельная строка «Использование права удаления» возможна, например, при удалении или переименовании. Установить исходный путь копирования по записи на носитель нельзя.</p>
+<p>Поиск по файлу учитывает выбранный режим. В сводке счётчик показывает число сгруппированных изменений, в полном режиме — число отдельных обращений. Для проверки чтения переключитесь на «Все обращения» и введите имя файла в поиск. Windows может показать путь к нему через имя тома, например <code>\Device\HarddiskVolume3\План.txt</code>.</p>
+<p>При большом числе подключений таблицы разбиты на страницы. На странице помещается до 15 носителей, 15 сеансов выбранного носителя или 40 строк в разделе «Файловые операции». Используйте поиск по идентификатору, номеру, файлу или учётной записи и ограничивайте период с помощью полей дат. Время приведено в часовом поясе компьютера, на котором открыт HTML.</p>
+<div class="note"><p>Для просмотра накопленной истории запустите актуальный <code>USB-Audit.exe</code> под учётной записью читателя и нажмите «Открыть журнал». Программа применит встроенный шаблон к текущему журналу и доступным архивам. Для одного архивного файла выберите «Архивы…» → «Открыть архив». Эти действия доступны с правами читателя без переустановки сборщика.</p>
+<p>Открытый HTML показывает данные на момент формирования. Чтобы увидеть новые события, снова нажмите «Открыть журнал». Кнопка «Сохранить копию отчёта» сохраняет весь снимок, включая обращения, скрытые выбранным режимом и фильтрами. Ранее сохранённые HTML-копии сохраняют свой исходный вид.</p></div>
+<h3>Как понимать записи</h3>
+<p>В истории строка «Открыт» означает, что в журнале есть начало сеанса и сборщик ещё не зарегистрировал его завершение. Если при запуске сборщика флешка уже подключена, за начало сеанса принимается время первого обнаружения.</p>
+<p>После извлечения флешки сборщик закрывает сеанс. Если Windows передала уведомление об удалении тома, в истории указано время этого события. При безопасном извлечении оно может предшествовать физическому отключению флешки. Без уведомления сборщик ждёт двух успешных опросов подряд, в которых диск отсутствует. В обоих случаях состояние сеанса — <strong>«Извлечён»</strong>. Пометка «Обнаружено при опросе» в графе «Извлечение» показывает, что отключение произошло между последним обнаружением диска и первой проверкой, когда он уже отсутствовал.</p>
+<p>Если для прежнего сеанса записано только последнее наблюдение, программа при формировании отчёта ищет подходящее событие Windows для этого устройства. При подтверждении в истории появятся «Извлечён» и пометка «Событие Windows 1010». При перерыве в наблюдении или отсутствии подтверждения состояние остаётся «Не определено». Если конец сеанса отсутствует в выбранном архиве, нажмите «Открыть журнал», чтобы проверить все доступные записи.</p>
+<p>Проверка извлечения по двум опросам действует сразу после установки этой версии. Если на АРМ уже работает другая сборка, запустите EXE этого выпуска, нажмите «Обновить», подтвердите запрос Windows и выбор ответственного. Затем сформируйте отчёт кнопкой «Открыть журнал».</p>
+<p>Чтение может выполнять пользовательская программа, антивирус или иной фоновый процесс. Одна запись о чтении не устанавливает, куда скопировали данные. Программа рассчитана на USB-устройства, которые Windows распознаёт как дисковые накопители.</p>
+</section>
+<section class="sheet" id="test"><h2>Проверка на контрольной флешке</h2>
+<p>Проверяйте учёт операций по уникальному имени файла. Корень диска и события распознавания устройства сами по себе не подтверждают чтение или запись конкретного файла.</p>
+<ol><li>Нажмите «Проверить». Убедитесь, что задача сборщика работает, а аудит успешных операций со съёмными носителями включён. Для чтения всех системных параметров может понадобиться запуск EXE от имени администратора.</li>
+<li>Подключите разрешённую тестовую флешку после включения аудита. В Проводнике выберите её раздел данных и запишите в отдельный тестовый файл несколько строк. Задайте новое имя, например <code>Проверка-СНИ-01.txt</code>. Закройте файл, заново откройте его для чтения и закройте.</li>
+<li>Через несколько секунд нажмите «Открыть журнал». Проверьте идентификатор и серийный номер носителя, если он доступен, и выберите тестовый сеанс. Введите имя контрольного файла в поиск. В «Изменениях файлов» проверьте запись. В режиме «Все обращения» проверьте чтение, учётную запись и процесс. Удалите созданный вами контрольный файл.</li>
+<li>Безопасно извлеките флешку, отключите её и дождитесь исчезновения диска в Windows. Оставьте её отключённой на время двух опросов, обычно около 10 секунд. Снова нажмите «Открыть журнал» и проверьте состояние «Извлечён» у тестового сеанса. Подключите флешку ещё раз и убедитесь, что в истории появилась отдельная строка. Повторите операции с файлом под другим именем.</li></ol>
+<p>Для автоматической сверки выполните в 64-разрядной Windows PowerShell следующую команду с фактическим именем контрольного файла. Сценарий ищет среди последних 2000 строк активного журнала события за 15 минут. Подтверждение означает, что Windows зарегистрировала и чтение, и запись по одному пути в одном сеансе.</p>
+<pre class="commands"><code>&amp; "$env:ProgramFiles\LocalUsbAudit\Check.ps1" -TestFileName 'Проверка-СНИ-01.txt'</code></pre>
+<h3>Виден носитель, но не виден файл</h3>
+<p>Переключитесь на «Все обращения» и проверьте период поиска. Если файл по-прежнему отсутствует, в «Просмотре событий» откройте «Журналы Windows» → «Безопасность» и найдите событие <strong>4663</strong> категории «Съёмные носители» за время проверки. Посмотрите поле имени объекта. Если события с контрольным именем есть, сформируйте отчёт заново и проверьте «Состояние сбора» и принадлежность файла нужному тому и сеансу.</p>
+<p>На некоторых сборках Windows для файлового аудита нужен параметр <code>HotPlugSecureOpen</code> типа DWORD со значением <code>1</code>. Узнать фактическое значение можно в PowerShell.</p>
+<pre class="commands"><code>Get-ItemPropertyValue -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Storage' -Name HotPlugSecureOpen</code></pre>
+<p>При значении <code>0</code> или отсутствии параметра администратору следует проверить действующие политики АРМ. Кнопка «Обновить» повторно применяет настройки установки. После применения настройки снова физически переподключите флешку, проверьте значение и повторите контрольную операцию. <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/monitor-the-use-of-removable-storage-devices">Документация Microsoft по аудиту съёмных носителей</a>.</p>
+</section>
+<section class="sheet" id="archive"><h2>Архивы и права доступа</h2>
+<p>Сборщик получает право добавлять строки в активный журнал. Участники группы <code>LocalUsbAuditReaders</code> могут читать и копировать данные. Назначение прав охватывает сам файл и его родительскую папку. Задание <code>LocalUsbAuditMaintenance</code> выполняет подтверждённую операцию с архивом от имени <code>SYSTEM</code>. Локальный администратор Windows сохраняет возможность изменить владельца и разрешения NTFS.</p>
+<div class="note"><p><strong>Почему Windows может запросить подтверждение дважды.</strong> UAC разрешает запуск установленного сценария с правами администратора. В сеансе обычного оператора Windows может запросить для этого учётные данные администратора АРМ. Затем сам сценарий проверяет пароль конкретной УЗ, назначенной ответственной за архивы. Этот второй шаг выполняется и при запуске из уже повышенного сеанса.</p></div>
+<ol><li>Нажмите <strong>«Архивы…»</strong>. Выберите закрытый файл и нажмите «Открыть архив», чтобы сформировать отчёт только за этот файл. Для просмотра и копирования достаточно прав читателя. Если сеанс пришёлся на границу архивов, откройте полный журнал для просмотра всей доступной истории.</li>
+<li>Чтобы закрыть текущий журнал, нажмите <strong>«Закрыть текущий журнал»</strong>. Программа сверит установленные сценарии с версией открытого EXE и вызовет системную Windows PowerShell с повышенными правами. Подтвердите UAC, если Windows показывает запрос. В отдельном окне PowerShell сверьте указанную УЗ, введите пароль ответственного и нажмите Enter. После успеха журнал перейдёт в архив, сбор продолжится в новом файле.</li>
+<li>Чтобы удалить архив, выберите закрытый файл и нажмите <strong>«Удалить архив»</strong>. Сверьте имя файла и подтвердите удаление. После повышения прав введите пароль назначенного администратора в окне PowerShell. Этот шаг повторяется при каждом закрытии журнала и удалении архива, в том числе в сеансе самого ответственного. Windows проверяет пароль, затем сценарий сверяет SID вошедшего пользователя с SID ответственного. При ошибке прочтите причину в окне PowerShell и нажмите Enter, чтобы закрыть его.</li>
+<li>Для проверки результата откройте журнал Windows «Приложение» и выберите источник <code>LocalUsbAuditMaintenance</code>. События 100 и 101 соответствуют запросу и завершению закрытия, 110 и 111 — запросу и завершению удаления. Событие 119 содержит ошибку.</li></ol>
+<p>Сразу после закрытия журнала новый активный файл может занимать 0 байт. «Проверить» покажет, что файл доступен и пока пуст. Для проверки поступления новых записей подключите СНИ и сформируйте отчёт повторно.</p>
+<p>Если UAC отменён, операция завершается до запроса пароля. При неверном пароле архив сохраняется. Введённый пароль обрабатывают повышенный сценарий и Windows. Журнал и конфигурация содержат служебные данные без пароля. Если программа сообщает о несовпадении контрольной суммы сценария, откройте EXE установленной версии и сверьте его SHA-256.</p>
+<p>Удаление архива относится к выбранному файлу. Ранее сохранённые копии отчётов и штатные события Windows имеют собственные сроки хранения. При большой истории контролируйте свободное место и периодически закрывайте журналы.</p>
+<h3>Расположение рабочих файлов</h3>
+<table><thead><tr><th>Назначение</th><th>Путь</th></tr></thead><tbody>
+<tr><td>Исполняемые сценарии и шаблон</td><td><code>%ProgramFiles%\LocalUsbAudit</code></td></tr>
+<tr><td>Активный журнал</td><td><code>%ProgramData%\LocalUsbAudit\Data\Active\events.jsonl</code></td></tr>
+<tr><td>Закрытые журналы</td><td><code>%ProgramData%\LocalUsbAudit\Data\Archive</code></td></tr>
+<tr><td>Снимок отчёта текущего пользователя</td><td><code>%LOCALAPPDATA%\LocalUsbAudit\Reports\USB-Audit.html</code></td></tr>
+</tbody></table></section>
+<section class="sheet" id="uninstall"><h2>Как снять программу с АРМ</h2>
+<p>В этом выпуске рабочие компоненты удаляет администратор Windows вручную. Команда «Удалить архив» в окне программы удаляет один закрытый журнал и оставляет сборщик работающим.</p>
+<ol><li>Закончите обслуживание архивов. Запишите SID задания сборщика, выполнив <code>schtasks.exe /showsid /tn "\LocalUsbAuditCollector"</code>. Остановите сборщик в Планировщике заданий. По согласованному сроку хранения скопируйте активный журнал, архивы или требуемые отчёты в отдельное место. Закройте окно программы.</li>
+<li>Удалите из корня Планировщика задания <code>LocalUsbAuditCollector</code> и <code>LocalUsbAuditMaintenance</code>, а из списка локальных групп — <code>LocalUsbAuditReaders</code>. Назначенный ответственный и читатель используют свои существующие учётные записи Windows.</li>
+<li>Удалите установленные сценарии из <code>%ProgramFiles%\LocalUsbAudit</code>. После решения о судьбе истории удалите рабочий каталог <code>%ProgramData%\LocalUsbAudit</code>. Для полного удаления тестовых данных проверьте папку <code>%LOCALAPPDATA%\LocalUsbAudit\Reports</code> каждого пользователя, формировавшего отчёт, и сохранённые вручную копии. Исходный <code>USB-Audit.exe</code> остаётся там, куда его скопировали.</li>
+<li>Сверьтесь с записью из раздела «Первый запуск» и с действующей политикой АРМ. Восстановите прежнее состояние аудита успешных событий PnP и съёмных носителей, прежнее значение или отсутствие <code>HotPlugSecureOpen</code>. В разрешениях канала «Безопасность» удалите добавленное программой право чтения для SID задания сборщика, сохранив изменения других приложений. Удалите регистрацию источника <code>LocalUsbAuditMaintenance</code> в журнале «Приложение», только если он появился при установке.</li>
+<li>Проверьте отсутствие обоих заданий, группы читателей и рабочих каталогов. Сверьте системные параметры с исходной записью. Накопленные события в штатных журналах Windows сохраняются до истечения срока хранения, заданного политикой АРМ.</li></ol>
+</section>
+<section class="sheet" id="build"><h2>Сборка из исходников</h2>
+<p>Для повторной сборки сохраните полный набор исходных файлов кнопкой ниже, распакуйте их в одну папку и откройте там 64-разрядную Windows PowerShell. Сценарий <code>Build.ps1</code> использует компилятор C# из <code>%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\csc.exe</code>. Он собирает приложение Windows Forms для x64 из <code>Launcher.cs</code> и встраивает шесть сценариев PowerShell и один шаблон HTML с их исходными именами. По умолчанию результат появится рядом с исходниками.</p>
+<pre class="commands"><code>powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\Build.ps1</code></pre>
+<div class="actions"><a class="button" href="data:application/zip;base64,@SOURCES_ZIP@" download="USB-Audit-sources.zip">Сохранить все исходники одним ZIP</a></div>
+<h3>Проверка EXE до установки</h3>
+<p>Откройте Windows PowerShell в папке с EXE. Встроенная самопроверка проверяет наличие семи ресурсов, разбирает синтаксис шести сценариев и ищет в шаблоне HTML место вставки данных. Она выводит SHA-256 каждого встроенного файла. Команда ниже позволяет прочитать русский текст в Windows PowerShell 5.1 и возвращает прежнюю кодировку консоли.</p>
+<pre class="commands"><code>$previousEncoding = [Console]::OutputEncoding
+try {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    .\USB-Audit.exe --self-test | Out-Host
+} finally {
+    [Console]::OutputEncoding = $previousEncoding
+}</code></pre>
+<p>Чтобы увидеть справку, замените <code>--self-test</code> в этой команде на <code>--help</code>. Чтобы извлечь семь рабочих компонентов для независимой сверки, вместо <code>--self-test</code> укажите <code>--extract .\usb-components</code>. Программа создаст папку, если её ещё нет. Для существующей папки требуется пустой каталог. Исходник самого окна и сценарий сборки входят в ZIP выше.</p>
+<p>Ниже приведён полный код девяти файлов с комментариями на русском языке. В <code>Launcher.cs</code> описан выбор УЗ, в <code>Install.ps1</code> и <code>Access.ps1</code> — назначение прав по SID, в <code>Maintenance.ps1</code> — проверка пароля и обработка запроса. Для поиска используйте <kbd>Ctrl</kbd>+<kbd>F</kbd>. Кнопка «Сохранить файл» возвращает исходные байты с исходной кодировкой и окончаниями строк. SHA-256 рядом с именем относится к этим байтам.</p>
+</section>
+"""
+
+FOOT_JS = r"""
+document.getElementById('print').addEventListener('click',()=>window.print());
+for(const button of document.querySelectorAll('button.copy')){
+  button.addEventListener('click',async()=>{
+    const section=button.closest('.source'), code=section.querySelector('pre code');
+    const status=section.querySelector('[role=status]');
+    try{
+      if(!navigator.clipboard) throw Error();
+      await navigator.clipboard.writeText(code.textContent);
+      status.textContent='Текст скопирован.';
+    }catch{
+      const s=window.getSelection(), r=document.createRange();r.selectNodeContents(code);
+      s.removeAllRanges();s.addRange(r);
+      status.textContent='Текст выделен. Нажмите Ctrl+C для копирования.';
+    }
+  });
+}
+"""
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def b64(data):
+    return base64.b64encode(data).decode("ascii")
+
+
+def archive(sources):
+    buf = io.BytesIO()
+    with ZipFile(buf, mode="w") as bundle:
+        for name, raw in sources.items():
+            entry = ZipInfo(name, (2026, 1, 1, 0, 0, 0))
+            entry.compress_type = ZIP_DEFLATED
+            bundle.writestr(entry, raw)
+    return buf.getvalue()
+
+
+def page(src, binary):
+    sources = {name: (src / name).read_bytes() for name in FILES}
+    license_file = (BASE / "LICENSE").read_bytes()
+    nav = []
+    listings = []
+    for i, (name, raw) in enumerate(sources.items(), 1):
+        anchor = f"src-{i}"
+        text = raw.decode("utf-8-sig")
+        encoding = "UTF-8 с BOM" if raw.startswith(b"\xef\xbb\xbf") else "UTF-8"
+        nav.append(f'<a href="#{anchor}">{name}</a>')
+        listings.append(f'''<section class="source" id="{anchor}" aria-labelledby="title-{anchor}">
+<h3 id="title-{anchor}">{name}</h3><p>{FILES[name]}</p>
+<p class="subtle">Строк в файле — {len(text.splitlines())} · Размер в байтах — {len(raw)} · {encoding}</p>
+<p class="hash"><strong>SHA-256</strong> {digest(raw)}</p>
+<div class="actions"><button class="button copy" type="button">Скопировать код</button>
+<a class="button" download="{name}" href="data:application/octet-stream;base64,{b64(raw)}">Сохранить файл</a>
+<span class="subtle" role="status"></span></div>
+<pre class="listing"><code>{html.escape(text, quote=False)}</code></pre></section>''')
+    document = DOCUMENT.replace("@EXE_HASH@", digest(binary.read_bytes()))
+    document = document.replace("@SOURCES_ZIP@", b64(archive({**sources, "LICENSE": license_file})))
+    return f'''<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="author" content="{AUTHOR}">
+<title>Журнал USB — руководство и исходный код</title><style>{CSS}</style></head><body>
+<a class="skip" href="#algorithm">К инструкции</a><div class="wrap"><aside><nav aria-label="Оглавление"><div><strong>Содержание</strong>
+<a href="#algorithm">Алгоритм работы</a><a href="#start">Первый запуск</a><a href="#cli">Установка по SID</a><a href="#report">Как читать историю</a><a href="#test">Проверка на флешке</a>
+<a href="#archive">Архивы и права</a><a href="#uninstall">Снятие с АРМ</a><a href="#build">Сборка из исходников</a>
+<a href="#listings">Полный листинг</a><a href="#license">Лицензия MIT</a></div><div class="file-nav"><strong>Исходные файлы</strong>{''.join(nav)}</div></nav></aside>
+<main><header><h1>Журнал USB</h1><p>USB-Audit {RELEASE} для Windows x64. Установка на автоматизированном рабочем месте (АРМ), история подключений съёмных носителей информации (СНИ), файловые операции и обслуживание архивов.</p><p>Автор — {AUTHOR} · <a href="#license">Лицензия MIT</a></p><button type="button" class="button" id="print">Печать руководства</button></header>
+{algorithm()}{document}<section class="sheet" id="listings"><h2>Полный листинг</h2>
+<table><thead><tr><th>Файл</th><th>Назначение</th></tr></thead><tbody>
+{''.join(f'<tr><td><a href="#src-{i}"><code>{name}</code></a></td><td>{description}</td></tr>' for i,(name,description) in enumerate(FILES.items(),1))}
+</tbody></table></section>{''.join(listings)}
+<section class="sheet" id="license"><h2>Лицензия MIT</h2><p>Программа, исходный код и руководство распространяются на условиях MIT. Текст лицензии также включён в архив исходников.</p>
+<pre class="commands" lang="en">{html.escape(license_file.decode("utf-8"), quote=False)}</pre></section></main></div><script>{FOOT_JS}</script></body></html>'''
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--src", type=Path, default=BASE / "src")
+    parser.add_argument("--exe", type=Path, default=OUTPUTS / "USB-Audit.exe")
+    parser.add_argument("--out", type=Path, default=BASE / "docs" / "USB-Audit-Guide.html")
+    args = parser.parse_args()
+    args.out.write_bytes(page(args.src, args.exe).encode("utf-8"))

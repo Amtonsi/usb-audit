@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="780" viewBox="0 0 1600 780" role="img" aria-labelledby="title description">
+  <title id="title">USB-Audit. Журнал USB-носителей в Windows</title>
+  <desc id="description">На одном рабочем месте прослеживаем связь между USB-носителем, сеансом его подключения и файловыми операциями.</desc>
+  <rect width="1600" height="780" fill="#F8F9F5"/>
+  <g font-family="Arial, sans-serif">
+    <path d="M80 88h72" stroke="#087F8C" stroke-width="6"/>
+    <text x="173" y="96" fill="#07585C" font-size="22" font-weight="700" letter-spacing="2">ЛАБОРАТОРИЯ WINDOWS</text>
+    <g fill="#0B2030" font-weight="700" font-size="87" letter-spacing="-3">
+      <text x="76" y="245">ЖУРНАЛ USB-</text>
+      <text x="76" y="343">НОСИТЕЛЕЙ</text>
+    </g>
+    <path d="M80 394h150" stroke="#087F8C" stroke-width="7"/>
+    <text x="80" y="470" fill="#0B2030" font-size="44">USB-Audit</text>
+    <g fill="#314B56" font-size="29">
+      <text x="80" y="536">Подключения и файловые операции</text>
+      <text x="80" y="580">на одном рабочем месте.</text>
+    </g>
+    <g transform="translate(840 110)">
+      <rect x="48" y="0" width="574" height="510" rx="16" fill="#EAF0EC"/>
+      <path d="M35 112v260q0 16 16 16h40M35 229h56" fill="none" stroke="#07585C" stroke-width="3"/>
+      <g fill="#FBFCFA" stroke="#07585C" stroke-width="3">
+        <rect x="0" y="28" width="574" height="113" rx="9"/>
+        <rect x="91" y="177" width="528" height="106" rx="9"/>
+        <rect x="91" y="335" width="528" height="106" rx="9"/>
+      </g>
+      <rect x="0" y="28" width="574" height="113" rx="9" fill="#07585C"/>
+      <!-- Разъём и корпус накопителя. -->
+      <g transform="translate(31 57)" fill="none" stroke="#EFF8F4" stroke-width="3" stroke-linejoin="round">
+        <rect x="0" y="13" width="45" height="36" rx="7"/>
+        <path d="M45 19h19v24H45M53 25v3m5-3v3"/>
+        <path d="M7 31h9" stroke-linecap="round"/>
+      </g>
+      <g fill="#FFFFFF">
+        <text x="116" y="79" font-size="32" font-weight="700">Носитель</text>
+        <text x="116" y="112" font-size="22" fill="#DAEAE6">Идентификатор и серийный номер</text>
+      </g>
+      <g fill="#0B2030" font-size="31" font-weight="700">
+        <text x="128" y="223">Сеанс подключения</text>
+        <text x="128" y="381">Файловая операция</text>
+      </g>
+      <g fill="#36545C" font-size="22">
+        <text x="128" y="255">Обнаружение и извлечение</text>
+        <text x="128" y="413">Путь, действие и процесс</text>
+      </g>
+      <g fill="#087F8C">
+        <rect x="83" y="221" width="16" height="16"/>
+        <rect x="83" y="380" width="16" height="16"/>
+      </g>
+    </g>
+    <path d="M80 672h1440" stroke="#A9B5B5" stroke-width="1.5"/>
+    <path d="M80 672h100" stroke="#087F8C" stroke-width="4"/>
+    <g fill="#35515C" font-size="22">
+      <text x="80" y="727">Амаль А. / Amtonsi</text>
+      <text x="1520" y="727" text-anchor="end">Windows 10 и 11 · x64</text>
+    </g>
+  </g>
+</svg>
