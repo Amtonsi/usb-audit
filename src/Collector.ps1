@@ -393,6 +393,11 @@ function Import-SecurityEvents([datetime]$Through) {
                 $fields=@{}
                 foreach ($node in $xml.Event.EventData.Data) { $fields[$node.Name]=[string]$node.'#text' }
                 $date=$record.TimeCreated.ToUniversalTime()
+                $denied=([long]$record.Keywords -band 0x0010000000000000L) -ne 0
+                $archive=$null
+                if ($record.Task -eq 12800) {
+                    $archive=ConvertFrom-ArchiveSecurityEvent -EventId $record.Id -Fields $fields -Denied $denied -ArchiveDirectory (Join-Path $root 'Data\Archive')
+                }
                 if ($record.Id -eq 6416) {
                     # Если носитель извлекли до обнаружения его томов, фиксируем распознавание Windows.
                     # Серийный номер и связь с файловыми операциями указываем только по данным СНИ.
@@ -407,24 +412,16 @@ function Import-SecurityEvents([datetime]$Through) {
                                 recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
                         }
                     }
-                } elseif ([int]$record.Task -eq 12800) {
-                    $denied=([long]$record.Keywords -band 0x0010000000000000L) -ne 0
-                    $archive=ConvertFrom-ArchiveSecurityEvent -EventId $record.Id -Fields $fields -Denied $denied -ArchiveDirectory (Join-Path $root 'Data\Archive')
-                    if ($archive) {
-                        $archive.recordId=[long]$record.RecordId
-                        $archive.logEpoch=$state.logEpoch
-                        New-Entry 'archiveAudit' $date $archive
-                    } elseif (!$denied -and $record.Id -eq 4663 -and $fields.ObjectType -eq 'File' -and
-                              $script:transferFolders.Count -and ([convert]::ToUInt32($fields.AccessMask,16) -band 6)) {
-                        $destination=ConvertTo-TransferDestination $fields.ObjectName
-                        if ($destination -and (Test-TransferSessionNear $date) -and !(Find-Session $destination $date)) {
-                            Add-TransferObservation 'write' $destination $fields $null $date $record.RecordId
-                        }
-                    }
-                } else {
+                } elseif ($archive) {
+                    $archive.recordId=[long]$record.RecordId
+                    $archive.logEpoch=$state.logEpoch
+                    New-Entry 'archiveAudit' $date $archive
+                } elseif ($record.Id -eq 4663 -and !$denied -and $fields.ObjectType -eq 'File' -and $fields.ObjectName) {
+                    # Windows может отнести обращение к USB-файлу к File System или Removable Storage.
+                    # Определяем СНИ по пути объекта и времени сеанса для обеих подкатегорий.
                     $match=Find-Session $fields.ObjectName $date
+                    $mask=[convert]::ToUInt32($fields.AccessMask,16)
                     if ($match) {
-                        $mask=[convert]::ToUInt32($fields.AccessMask,16)
                         $account=$fields.SubjectUserName
                         if ($fields.SubjectDomainName) { $account=$fields.SubjectDomainName+'\'+$account }
                         # При сверке содержимого сам сборщик читает исходник. Это его техническое обращение.
@@ -434,14 +431,21 @@ function Import-SecurityEvents([datetime]$Through) {
                             New-Entry 'file' $date @{session=$match.session;deviceId=$match.deviceId;serial=$match.serial;model=$match.model
                                 account=$account;path=$fields.ObjectName;process=$fields.ProcessName;action=Get-AccessDescription $mask
                                 accessMask=$fields.AccessMask;recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
-                            if ($script:transferFolders.Count -and ($mask -band 1) -and $fields.ObjectType -eq 'File') {
+                            if ($script:transferFolders.Count -and ($mask -band 1)) {
                                 $sourcePath=ConvertTo-TransferSource $fields.ObjectName $match $date
                                 if ($sourcePath -notin @($match.bindings | ForEach-Object { $_.path })) {
                                     Add-TransferObservation 'read' $sourcePath $fields $match $date $record.RecordId
                                 }
                             }
                         }
-                    } else { $unmapped++ }
+                    } elseif ($record.Task -eq 12812) {
+                        $unmapped++
+                    } elseif ($script:transferFolders.Count -and ($mask -band 6)) {
+                        $destination=ConvertTo-TransferDestination $fields.ObjectName
+                        if ($destination -and (Test-TransferSessionNear $date) -and !(Find-Session $destination $date)) {
+                            Add-TransferObservation 'write' $destination $fields $null $date $record.RecordId
+                        }
+                    }
                 }
                 $state.cursor=[long]$record.RecordId
                 $state.cursorTime=Get-UtcText $date

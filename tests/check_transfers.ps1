@@ -29,14 +29,14 @@ function Reset-Case {
     $script:lastId=0L
     Initialize-TransferQueue
 }
-function Add-FixtureRecord([string]$Path,[int]$Task,[int]$Mask,[int]$Seconds,[string]$ProcessId='0x987',[string]$Login='0x1234') {
+function Add-FixtureRecord([string]$Path,[int]$Task,[int]$Mask,[int]$Seconds,[string]$ProcessId='0x987',[string]$Login='0x1234',[int]$EventId=4663,[long]$Keywords=0) {
     $script:lastId++
     $fields=[ordered]@{ObjectName=$Path;AccessMask=('0x{0:x}' -f $Mask);ProcessName='C:\Windows\explorer.exe';ProcessId=$ProcessId;
         SubjectUserSid='S-1-5-21-123-456-789-1001';SubjectLogonId=$Login;SubjectUserName='operator';SubjectDomainName='TEST';ObjectType='File'}
     $part=foreach ($pair in $fields.GetEnumerator()) {
         '<Data Name="'+$pair.Key+'">'+[Security.SecurityElement]::Escape([string]$pair.Value)+'</Data>'
     }
-    $item=[pscustomobject]@{RecordId=$script:lastId;Id=4663;Task=$Task;Keywords=0L;TimeCreated=$instant.AddSeconds($Seconds);
+    $item=[pscustomobject]@{RecordId=$script:lastId;Id=$EventId;Task=$Task;Keywords=$Keywords;TimeCreated=$instant.AddSeconds($Seconds);
         xml=('<Event><EventData>'+($part -join '')+'</EventData></Event>')}
     $item | Add-Member ScriptMethod ToXml { return $this.xml }
     $item | Add-Member ScriptMethod Dispose {}
@@ -79,6 +79,62 @@ try {
     if ($transfer.sha256 -ne $expectedHash -or $transfer.sourceRecordId -ne 3 -or $transfer.destinationRecordId -ne 1) {throw 'Missing event or SHA evidence'}
     if ((ConvertTo-TransferDestination '\Device\UnitTarget\out\sample.txt') -ne $targetFile -or
         (ConvertTo-TransferDestination '\Device\UnitTarget\outside\sample.txt')) {throw 'Incorrect destination folder boundary'}
+    # Некоторые драйверы отдают по USB-файлу только категорию File System.
+    $instant=$instant.AddSeconds(-60)
+    Reset-Case
+    Add-FixtureRecord $sourceFile 12800 1 0
+    Add-FixtureRecord $sourceFile 12800 2 0
+    Add-FixtureRecord $targetFile 12800 2 1
+    Add-FixtureRecord (Join-Path $scratch 'unrelated.txt') 12800 2 1
+    Add-FixtureRecord $sourceFile 12800 2 1 -EventId 4656 -Keywords 0x0010000000000000L
+    Add-FixtureRecord $sourceFile 12800 1 1 -EventId 4656
+    Add-FixtureRecord $sourceFile 12800 1 1 -Keywords 0x0010000000000000L
+    Import-SecurityEvents $instant.AddSeconds(10)
+    $rawFiles=@($script:pending | Where-Object type -eq 'file')
+    if ($rawFiles.Count -ne 2 -or $rawFiles[0].accessMask -ne '0x1' -or
+        $rawFiles[1].accessMask -ne '0x2' -or @($rawFiles | Where-Object path -ne $sourceFile).Count) {
+        throw 'USB File System records did not preserve only the two actual source accesses'
+    }
+    if (@($script:pending | Where-Object type -eq 'status').Count) {throw 'Unrelated local paths must stay quiet'}
+    Assert-Transfers 1 'pairedAccess'
+    # Два разных события Windows — два исходных обращения и один перенос.
+    Reset-Case
+    Add-FixtureRecord $sourceFile 12800 1 0
+    Add-FixtureRecord $sourceFile 12812 1 0
+    Add-FixtureRecord $targetFile 12800 2 1
+    Add-FixtureRecord $targetFile 12800 4 1
+    Add-FixtureRecord $targetFile 12812 2 1
+    Import-SecurityEvents $instant.AddSeconds(10)
+    Assert-Transfers 1 'pairedAccess'
+    $rawIds=@($script:pending | Where-Object type -eq 'file' | ForEach-Object { $_.recordId })
+    if ($rawIds.Count -ne 2 -or $rawIds[0] -ne 1 -or $rawIds[1] -ne 2) {throw 'Source record IDs lost'}
+    # Неопознанное обращение Removable Storage порождает предупреждение; оно не получает чужой сеанс.
+    if (!$script:lastNotice.ContainsKey('unmapped')) {throw 'Missing notice for an unbound removable event'}
+
+    # В журнале Windows тип File получают и каталоги. Они остаются в исходном аудите.
+    Reset-Case
+    $subdirectory=[IO.Directory]::CreateDirectory((Join-Path $origin 'folder.txt')).FullName
+    try {
+        Add-FixtureRecord $origin 12800 1 0
+        Add-FixtureRecord $subdirectory 12800 1 0
+        Add-FixtureRecord (Join-Path $target 'folder.txt') 12800 2 1
+        Import-SecurityEvents $instant.AddSeconds(10)
+        Assert-Transfers 0
+        if (@($script:pending | Where-Object type -eq 'file').Count -ne 2) {throw 'Missing raw directory accesses'}
+    } finally { [IO.Directory]::Delete($subdirectory) }
+
+    # Архив контролируется резидентным аудитом даже при пересечении с привязкой тома.
+    Reset-Case
+    $archivePath=Join-Path $root 'Data\Archive\fixture.jsonl'
+    $state.sessions=@([pscustomobject]@{session='overlap';start=$usb.start;end=$null
+        bindings=@([pscustomobject]@{path=(Split-Path $archivePath);start=$usb.start;end=$null});volumes=@()})
+    Add-FixtureRecord $archivePath 12800 0x10000 0 -EventId 4656 -Keywords 0x0010000000000000L
+    Add-FixtureRecord $archivePath 12800 2 1
+    Import-SecurityEvents $instant.AddSeconds(10)
+    $audit=@($script:pending | Where-Object type -eq 'archiveAudit')
+    if ($audit.Count -ne 2 -or $audit[0].result -ne 'Отказано в доступе' -or
+        $audit[1].eventId -ne 4663 -or @($script:pending | Where-Object type -eq 'file').Count) {throw 'Archive routing lost'}
+    $instant=$instant.AddSeconds(60)
     $wrongVolume='\\?\Volume{00000000-0000-0000-0000-000000000000}'+$sourceFile.Substring(2)
     if ([UsbAuditFileComparison]::TryCompare($sourceFile,$targetFile,$wrongVolume)) {throw 'Drive letter reuse was accepted'}
 

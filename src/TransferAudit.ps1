@@ -283,8 +283,13 @@ function Add-TransferObservation([string]$Kind,[string]$Path,$Fields,$Session,[d
 function Get-TransferDigest($Read,$Destination,[datetime]$When) {
     $now=[datetime]::UtcNow
     $current=Find-Session $Read.path $now
-    if ($Read.volumePath -and $current -and $current.session -eq $Read.identity.session -and
-        !$current.firstAbsent -and !$current.removalSignal -and ($now-$When).TotalSeconds -le 45) {
+    $sameVolume=$current -and $current.session -eq $Read.identity.session -and !$current.firstAbsent -and !$current.removalSignal
+    # Бит чтения файла в событии 4663 совпадает с битом перечисления каталога.
+    # Проверяем тип только у кандидатов на перенос; извлечённый том по старой букве не открываем.
+    if ([IO.Directory]::Exists($Destination) -or ($sameVolume -and $Read.path -match '^[A-Z]:\\' -and [IO.Directory]::Exists($Read.path))) {
+        return 'directory'
+    }
+    if ($Read.volumePath -and $sameVolume -and ($now-$When).TotalSeconds -le 45) {
         return [UsbAuditFileComparison]::TryCompare($Read.path,$Destination,$Read.volumePath)
     }
 }
@@ -326,7 +331,7 @@ function Complete-TransferObservations([datetime]$Watermark) {
         $fields=New-TransferFields $read $edge 'pairedAccess'
         $fields.destinationRecordId=$edge.rid
         $digest=Get-TransferDigest $read $edge.path $when
-        if ($digest -eq 'different') { continue }
+        if ($digest -in 'different','directory') { continue }
         if ($digest -match '^sizes:(\d+):(\d+)$') {
             if ($Matches[1] -ne $Matches[2]) { continue }
             $fields.sourceBytes=[long]$Matches[1]; $fields.destinationBytes=[long]$Matches[2]
@@ -357,7 +362,7 @@ function Complete-TransferObservations([datetime]$Watermark) {
         $read=@($candidates.Values)[0]
         $when=[datetime]::new([long]$edge.ticks,[DateTimeKind]::Utc)
         $digest=Get-TransferDigest $read $edge.path $when
-        if ($digest -eq 'different') {continue}
+        if ($digest -in 'different','directory') {continue}
         $fields=New-TransferFields $read $edge 'observedCreation'
         if ($digest -match '^sizes:(\d+):(\d+)$') {
             $fields.sourceBytes=[long]$Matches[1]; $fields.destinationBytes=[long]$Matches[2]

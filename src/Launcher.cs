@@ -17,8 +17,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.1.0")]
 
 internal static class UsbAudit
 {
@@ -667,7 +667,7 @@ internal sealed class AdministratorPicker : Form
         var addFolder = Dashboard.Button("Добавить папку…");
         addFolder.AutoSize = true;
         addFolder.Click += delegate {
-            using (var dialog = new FolderBrowserDialog {Description="Выберите существующую локальную папку NTFS для контроля записи", ShowNewFolderButton=false})
+            using (var dialog = new FolderBrowserDialog {Description="Выберите локальную папку NTFS. Для рабочего стола откройте папку того пользователя, который будет копировать файлы.", ShowNewFolderButton=false})
                 if (dialog.ShowDialog(this)==DialogResult.OK && !SelectedFolders.Contains(dialog.SelectedPath,StringComparer.OrdinalIgnoreCase))
                     folders.Items.Add(dialog.SelectedPath);
         };
