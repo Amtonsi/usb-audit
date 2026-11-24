@@ -32,6 +32,19 @@ function Get-UsbSnapshot {
     return $devices
 }
 function Register-WmiEvent {param($Query,$SourceIdentifier)}
+function Update-KernelTransferObserver {param([datetime]$Now)}
+function New-VolumeChangeWatcher([string]$NtRoot) {
+    # Fixtures never open real drive roots. Deliver notices on their specified frame.
+    $watch=[pscustomobject]@{Error=$null}
+    $watch | Add-Member ScriptMethod Dispose {}
+    $watch | Add-Member ScriptMethod Drain {
+        foreach ($item in @($script:frames[$script:frame].changes | Where-Object { $_ })) {
+            [pscustomobject]@{Path=$item.path;OldPath=$item.old;Change=$item.change
+                Ticks=$script:baseTime.AddSeconds($item.at).Ticks}
+        }
+    }
+    return $watch
+}
 function Read-UsbArchiveInterfaceEvents {}
 function Unregister-Event {param($SourceIdentifier)}
 function Remove-Event {param($EventIdentifier)}

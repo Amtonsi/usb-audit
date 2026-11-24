@@ -5,11 +5,70 @@ param(
     [string]$ViewerTemplate,
     [switch]$NoOpen,
     [switch]$Demo,
+    [Parameter(ParameterSetName='All')][switch]$RequireComplete,
+    [Parameter(ParameterSetName='Watch',Mandatory)][switch]$Watch,
     [Parameter(ParameterSetName='Active',Mandatory)][switch]$ActiveOnly,
     [Parameter(ParameterSetName='Archive',Mandatory)][ValidateNotNullOrEmpty()][string]$ArchiveName
 )
 $ErrorActionPreference = 'Stop'
 $utf8 = New-Object System.Text.UTF8Encoding($false)
+$defaultReport = Join-Path $env:LOCALAPPDATA 'LocalUsbAudit\Reports\USB-Audit.html'
+if (!$PSBoundParameters.ContainsKey('OutputPath') -and $ArchiveName) {
+    $OutputPath = Join-Path ([IO.Path]::GetDirectoryName($defaultReport)) ('Archive-' + [IO.Path]::GetFileNameWithoutExtension($ArchiveName) + '.html')
+}
+if (!$PSBoundParameters.ContainsKey('OutputPath') -and $ActiveOnly) {
+    $OutputPath = Join-Path ([IO.Path]::GetDirectoryName($defaultReport)) 'Active.html'
+}
+# Планировщик запускает обновление только в обычном интерактивном сеансе читателя.
+# В профиле остаются самостоятельный HTML и метка без путей, имён и событий аудита.
+if ($Watch) {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if ($identity.IsSystem -or $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'Обновление отчёта должно работать в обычном сеансе читателя.'
+    }
+    $root = [IO.Path]::GetFullPath($DataRoot)
+    $target = [IO.Path]::GetFullPath($OutputPath)
+    if (!$target.Equals($defaultReport,[StringComparison]::OrdinalIgnoreCase)) { throw 'Допускается только основной HTML-отчёт читателя.' }
+    $folder = [IO.Path]::GetDirectoryName($target)
+    [void][IO.Directory]::CreateDirectory($folder)
+    $signal = Join-Path $folder 'USB-Audit-status.css'
+    $tempSignal = Join-Path $folder ('.usb-status-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    $scriptPath = $PSCommandPath
+    $prior = $null
+    $lastSignal = ''
+    $lastWrite = [datetime]::MinValue
+    try {
+        while ([IO.File]::Exists($scriptPath)) {
+            $phase = 'ok'
+            try {
+                $active = Get-Item -LiteralPath (Join-Path $root 'Active\events.jsonl') -ErrorAction Stop
+                $archives = @(Get-ChildItem -LiteralPath (Join-Path $root 'Archive') -File -Filter '*.jsonl' -ErrorAction Stop | Sort-Object Name)
+                $signature = (@($active) + $archives | ForEach-Object { '{0}:{1}:{2}' -f $_.Name,$_.Length,$_.LastWriteTimeUtc.Ticks }) -join '|'
+                if ($signature -cne $prior -or ![IO.File]::Exists($target)) {
+                    & $scriptPath -DataRoot $root -OutputPath $target -RequireComplete -NoOpen | Out-Null
+                    $prior = $signature
+                }
+            } catch { $phase = 'unavailable' }
+            $now = [datetime]::UtcNow
+            $generation = [IO.File]::GetLastWriteTimeUtc($target).ToFileTimeUtc().ToString()
+            $stateKey = $generation + ':' + $phase
+            if ($lastSignal -cne $stateKey -or ($now-$lastWrite).TotalSeconds -ge 15) {
+                $unix = [datetimeoffset]::UtcNow.ToUnixTimeSeconds()
+                $css = ":root{--usb-generation:$generation;--usb-heartbeat:$unix;--usb-state:$phase}"
+                [IO.File]::WriteAllText($tempSignal,$css,$utf8)
+                if ([IO.File]::Exists($signal)) { [IO.File]::Replace($tempSignal,$signal,[Management.Automation.Language.NullString]::Value) }
+                else { [IO.File]::Move($tempSignal,$signal) }
+                $lastSignal=$stateKey
+                $lastWrite=$now
+            }
+            Start-Sleep -Seconds 5
+        }
+    } finally {
+        if ([IO.File]::Exists($tempSignal)) { [IO.File]::Delete($tempSignal) }
+    }
+    return
+}
 # При запуске из EXE шаблон той же сборки приходит из встроенного ресурса.
 # Самостоятельно запущенный сценарий читает файл рядом с собой.
 $templatePath = if ($PSScriptRoot) { Join-Path $PSScriptRoot 'viewer.html' }
@@ -47,6 +106,13 @@ $handles = New-Object 'System.Collections.Generic.List[object]'
 $sharing = [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete
 $localData = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'LocalUsbAudit\Data\'
 $useEvidence = !$Demo -and $rootPath.Equals($localData, [StringComparison]::OrdinalIgnoreCase)
+$primaryData = [IO.Path]::GetFullPath((Join-Path $env:ProgramData 'LocalUsbAudit\Data')).TrimEnd('\') + '\'
+$live = !$Demo -and !$ArchiveName -and !$ActiveOnly -and $rootPath.Equals($primaryData,[StringComparison]::OrdinalIgnoreCase) -and $destination.Equals($defaultReport,[StringComparison]::OrdinalIgnoreCase)
+if ($live) {
+    # Только основная страница может загрузить локальную таблицу стилей с меткой.
+    $template = $template.Replace("style-src 'unsafe-inline'; base-uri","style-src 'unsafe-inline' file:; base-uri")
+    $offset = $template.IndexOf($marker,[StringComparison]::Ordinal)
+}
 $legacySessions = @{}
 
 # Разбираем только записи прежнего формата о конце сеанса. Они не указывают причину завершения.
@@ -181,11 +247,17 @@ try {
     if (!$handles.Count) {
         throw ('Не удалось открыть ни одного журнала. После добавления в группу читателей выйдите из Windows и войдите снова. ' + ($problems -join ' '))
     }
+    if ($RequireComplete -and $problems.Count) { throw ($problems -join ' ') }
     $writer = [IO.StreamWriter]::new($scratch, $false, $utf8)
     $writer.Write($template.Substring(0, $offset))
     $computerName = if ($Demo) { 'ARM-DEMO' } else { $env:COMPUTERNAME }
     $scope = if ($ActiveOnly) { 'active' } elseif ($ArchiveName) { 'archive' } else { 'all' }
     $meta = @{time=[DateTimeOffset]::UtcNow.ToString('o'); host=$computerName; demo=[bool]$Demo; scope=$scope; archive=$ArchiveName; problems=$problems.ToArray()}
+    if ($live) {
+        $stamp = [DateTime]::UtcNow
+        $meta.liveUri = ([Uri]::new($destination)).AbsoluteUri
+        $meta.generation = $stamp.ToFileTimeUtc().ToString()
+    }
     # Встраиваем снимок журналов в HTML. Его можно открыть и скопировать без обращения к исходному АРМ.
     foreach ($source in $handles) {
         $encodedName = [Convert]::ToBase64String($utf8.GetBytes($source.Name))
@@ -228,6 +300,7 @@ try {
     $writer.Write($template.Substring($offset + $marker.Length))
     $writer.Dispose()
     $writer = $null
+    if ($live) { [IO.File]::SetLastWriteTimeUtc($scratch,$stamp) }
     if ([IO.File]::Exists($destination)) {
         [IO.File]::Replace($scratch, $destination, [Management.Automation.Language.NullString]::Value)
     } else {

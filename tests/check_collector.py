@@ -64,6 +64,15 @@ reason(rows,'end_unknown','collectorRestart')
 rows=run('overrun',[frame(0,p),frame(4,p),frame(8,p,events=[{'kind':2,'at':7}]*129),frame(12,p)])
 assert transitions(rows)==['connect','end_unknown','connect'],transitions(rows)
 reason(rows,'end_unknown','queueOverflow')
+changes=[dict(change=kind,path='leaf.txt',at=1+i) for i,kind in enumerate(['created','changed','deleted'])]
+changes.append(dict(change='renamed',path='new.txt',old='old.txt',at=4))
+rows=run('volume-changes',[frame(0,p),frame(4,p,changes=changes),frame(8,a),frame(12,a),
+    frame(16,p),frame(20,p,changes=[dict(change='deleted',path='wrong-session.txt',at=5)])])
+observed=[r for r in rows if r.get('source')=='volumeWatcher']
+assert [r['change'] for r in observed]==['created','changed','deleted','renamed'],observed
+assert observed[-1]['oldPath']==r'\Device\HarddiskVolume88\old.txt'
+assert all(r['path'].startswith('\\Device\\HarddiskVolume88\\') and 'account' not in r and 'process' not in r for r in observed)
+print('Passed USB volume notifications: create, change, delete, old and new rename paths, and stale session exclusion.')
 print('Passed real collector loop in Windows PowerShell: abrupt removal, time interval, delayed file binding, reconnect, debounce, WMI removal/reinsert, failed inventory, observation gap and checkpoint restart.')
 
 scratch.cleanup()

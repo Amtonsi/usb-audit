@@ -17,15 +17,16 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
-[assembly: AssemblyVersion("1.1.1.0")]
-[assembly: AssemblyFileVersion("1.1.1.0")]
+[assembly: AssemblyVersion("1.2.2.0")]
+[assembly: AssemblyFileVersion("1.2.2.0")]
 
 internal static class UsbAudit
 {
     internal static readonly string[] Files = {
         "Access.ps1", "Collector.ps1", "Install.ps1", "Report.ps1",
         "viewer.html", "Maintenance.ps1", "Check.ps1",
-        "ArchiveAudit.ps1", "TransferAudit.ps1", "DestinationAudit.ps1"
+        "ArchiveAudit.ps1", "TransferAudit.ps1", "DestinationAudit.ps1",
+        "KernelFileTrace.cs", "KernelTransferMatcher.cs"
     };
     internal static readonly string ProgramRoot = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
     internal static readonly string Installed = Path.Combine(ProgramRoot, "LocalUsbAudit");
@@ -162,6 +163,7 @@ internal static class UsbAudit
         if (!new HashSet<string>(Files).SetEquals(Assembly.GetExecutingAssembly().GetManifestResourceNames()))
             throw new InvalidDataException("Состав ресурсов отличается от ожидаемого.");
         StringBuilder source = new StringBuilder();
+        var kernelSources = new List<string>();
         using (SHA256 sha = SHA256.Create())
         foreach (string file in Files)
         {
@@ -171,9 +173,19 @@ internal static class UsbAudit
             {
                 if (!text.Contains("<!-- USB-AUDIT-DATA -->")) throw new InvalidDataException("Повреждён шаблон отчёта.");
             }
+            else if (file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) kernelSources.Add(text);
             else
                 source.AppendLine(file + " " + Convert.ToBase64String(Utf8.GetBytes(text)));
             Console.WriteLine(BitConverter.ToString(sha.ComputeHash(contents)).Replace("-", "") + "  " + file);
+        }
+        // Проверяем ровно те исходники .NET, которые получит сборщик на рабочем месте.
+        using (var provider = System.CodeDom.Compiler.CodeDomProvider.CreateProvider("CSharp"))
+        {
+            var options = new System.CodeDom.Compiler.CompilerParameters(new[]{"System.dll","System.Core.dll"});
+            options.GenerateInMemory = true;
+            var compilation = provider.CompileAssemblyFromSource(options,kernelSources.ToArray());
+            if (compilation.Errors.HasErrors)
+                throw new InvalidDataException(String.Join("\n",compilation.Errors.Cast<System.CodeDom.Compiler.CompilerError>().Select(e=>e.ToString())));
         }
         string parser =
             "while ($null -ne ($s=[Console]::ReadLine())) {" +
@@ -183,7 +195,8 @@ internal static class UsbAudit
             "if($err.Count){throw ($name+' '+$err[0].Message)}}; exit 0";
         PsResult result = PowerShell(parser, Environment.SystemDirectory, source.ToString(), null);
         result.RequireSuccess();
-        Console.WriteLine("OK: {0} ресурсов, {1} сценариев PowerShell, шаблон HTML.", Files.Length, Files.Length-1);
+        Console.WriteLine("OK: {0} ресурсов, {1} сценариев PowerShell, {2} исходника C#, шаблон HTML.",
+            Files.Length, Files.Length-1-kernelSources.Count, kernelSources.Count);
     }
 
     private static void CheckNoLinks(string path)
@@ -613,7 +626,8 @@ internal static class UsbAudit
         if (action == "report" && result.Code == 0)
         {
             string report = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"LocalUsbAudit\Reports\USB-Audit.html");
+                @"LocalUsbAudit\Reports", archive == null ? "USB-Audit.html" :
+                    "Archive-" + Path.GetFileNameWithoutExtension(archive) + ".html");
             if (!File.Exists(report)) throw new FileNotFoundException("Отчёт не найден после формирования.", report);
             Process.Start(new ProcessStartInfo(report) {UseShellExecute=true});
         }

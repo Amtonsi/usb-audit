@@ -33,6 +33,18 @@ public static class UsbAuditNative {
     static extern uint QueryDosDevice(string device, StringBuilder value, int size);
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
     static extern bool GetVolumeNameForVolumeMountPoint(string path, StringBuilder name, int size);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    static extern IntPtr FindFirstVolume(StringBuilder volume, uint size);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    static extern bool FindNextVolume(IntPtr handle, StringBuilder volume, uint size);
+    [DllImport("kernel32.dll")] static extern bool FindVolumeClose(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode)]
+    static extern uint GetDriveType(string root);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    static extern bool GetVolumePathNamesForVolumeName(string volume, [Out] char[] paths, uint size, out uint required);
+    [DllImport("kernel32.dll", SetLastError=true)]
+    static extern bool DeviceIoControl(SafeFileHandle handle,uint code,byte[] input,int sizeIn,
+        [Out] byte[] output,int sizeOut,out int returned,IntPtr overlapped);
     [DllImport("cfgmgr32.dll", CharSet=CharSet.Unicode)]
     static extern int CM_Locate_DevNodeW(out uint node, string id, uint flags);
     [DllImport("cfgmgr32.dll")]
@@ -56,6 +68,49 @@ public static class UsbAuditNative {
     public static string NtName(string alias) {
         var value = new StringBuilder(32768);
         return QueryDosDevice(alias, value, value.Capacity) == 0 ? null : value.ToString();
+    }
+    static bool IsLocalStorage(string volume) {
+        using(var handle=CreateFile(volume.TrimEnd('\\'),0,7,IntPtr.Zero,3,0,IntPtr.Zero)) {
+            if(handle.IsInvalid) return false;
+            // STORAGE_DEVICE_DESCRIPTOR.BusType. USB SSD тоже может иметь тип DRIVE_FIXED.
+            var query=new byte[12]; var descriptor=new byte[1024]; int returned;
+            if(!DeviceIoControl(handle,0x2d1400,query,query.Length,descriptor,descriptor.Length,out returned,IntPtr.Zero) || returned<32) return false;
+            switch(BitConverter.ToInt32(descriptor,28)) {
+                case 1: case 2: case 3: case 8: case 10: case 11: case 14: case 16: case 17: case 18: case 19: return true;
+                default: return false;
+            }
+        }
+    }
+    // У тома могут быть буква, несколько точек монтирования или только каталог на другом томе.
+    public static System.Collections.Generic.Dictionary<string,string> LocalRoots() {
+        var roots=new System.Collections.Generic.Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+        var name=new StringBuilder(1024);
+        IntPtr handle=FindFirstVolume(name,(uint)name.Capacity);
+        if (handle==new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        try {
+            do {
+                string volume=name.ToString();
+                if (GetDriveType(volume)!=3 || !IsLocalStorage(volume)) continue;
+                uint size;
+                GetVolumePathNamesForVolumeName(volume,null,0,out size);
+                if (size<2 || size>32768) continue;
+                var paths=new char[size];
+                if (!GetVolumePathNamesForVolumeName(volume,paths,size,out size)) continue;
+                string display=null;
+                foreach (string mounted in new string(paths).Split(new[]{'\0'},StringSplitOptions.RemoveEmptyEntries)) {
+                    if(mounted.Length<3 || mounted[1]!=':' || mounted[2]!='\\') continue;
+                    string root=mounted.TrimEnd('\\');
+                    roots[root]=root;
+                    if(display==null || root.Length<display.Length) display=root;
+                }
+                if(display==null) continue;
+                string guid=volume.TrimEnd('\\');
+                roots[guid]=display;
+                string nt=NtName(guid.Substring(4));
+                if(!String.IsNullOrEmpty(nt)) roots[nt]=display;
+            } while(FindNextVolume(handle,name,(uint)name.Capacity));
+        } finally {FindVolumeClose(handle);}
+        return roots;
     }
     public static string VolumeName(string root) {
         var value = new StringBuilder(1024);
@@ -347,6 +402,70 @@ function Find-Session([string]$Path, [datetime]$Date) {
     }
     return $best
 }
+
+# ReadDirectoryChangesW сообщает о фактическом изменении имени и данных даже тогда,
+# когда Security записал только чтение корня. Дескриптор открываем по имени тома:
+# повторное назначение той же буквы диска не направит наблюдение на другой носитель.
+function New-VolumeChangeWatcher([string]$NtRoot) {
+    [UsbAuditDestinationWatcher]::new(('\\?\GLOBALROOT'+$NtRoot+'\'),$true)
+}
+function Update-VolumeChangeWatchers([datetime]$Now) {
+    $wanted=@{}
+    foreach ($session in $state.sessions) {
+        if ($session.end -or $session.firstAbsent -or $session.removalSignal) { continue }
+        foreach ($volume in $session.volumes) {
+            $nt=$volume.paths | Where-Object { $_ -match '^\\Device\\HarddiskVolume\d+\\?$' } | Select-Object -First 1
+            if (!$nt) {
+                Add-Notice 'volume-watch-binding' 'Для тома СНИ не удалось определить системное имя. Наблюдение за его файловыми изменениями временно недоступно.'
+                continue
+            }
+            $nt=$nt.TrimEnd('\')
+            $key=$session.session+'|'+$nt
+            $wanted[$key]=$true
+            if (!$script:volumeWatches.ContainsKey($key)) {
+                $script:volumeWatches[$key]=@{nt=$nt;session=$session.session;watch=$null;retry=[datetime]::MinValue}
+            }
+        }
+    }
+    foreach ($key in @($script:volumeWatches.Keys)) {
+        $slot=$script:volumeWatches[$key]
+        if ($slot.watch) {
+            # Уже доставленные уведомления относятся к старому дескриптору. Их можно
+            # записать и после отсоединения, если время попадает в границы его сеанса.
+            foreach ($notice in $slot.watch.Drain()) {
+                if (!$notice.Path) { continue }
+                $when=[datetime]::new($notice.Ticks,[DateTimeKind]::Utc)
+                $path=$slot.nt+'\'+$notice.Path
+                $owner=Find-Session $path $when
+                if (!$owner -or $owner.session -ne $slot.session) { continue }
+                $fields=@{session=$slot.session;deviceId=$owner.deviceId;serial=$owner.serial;model=$owner.model
+                    path=$path;source='volumeWatcher';change=$notice.Change}
+                if ($notice.OldPath) { $fields.oldPath=$slot.nt+'\'+$notice.OldPath }
+                $fields.uid=[guid]::NewGuid().ToString()
+                Add-UsbDestinationNotice $path $owner $when $notice.Change $fields.uid $fields.oldPath
+                New-Entry 'file' $when $fields
+            }
+            $failure=$slot.watch.Error
+            if ($failure -or !$wanted.ContainsKey($key)) {
+                $slot.watch.Dispose()
+                $slot.watch=$null
+                if ($failure) {
+                    Add-Notice ('volume-watch-loss-'+$key) ('Перерыв наблюдения за изменениями на томе '+$slot.nt+': '+$failure)
+                    $slot.retry=$Now.AddSeconds(5)
+                }
+            }
+        }
+        if (!$wanted.ContainsKey($key)) {
+            $script:volumeWatches.Remove($key)
+        } elseif (!$slot.watch -and $Now -ge $slot.retry) {
+            try { $slot.watch=New-VolumeChangeWatcher $slot.nt }
+            catch {
+                Add-Notice ('volume-watch-open-'+$key) ('Наблюдение изменений на томе '+$slot.nt+' недоступно: '+$_.Exception.GetBaseException().Message)
+                $slot.retry=$Now.AddSeconds(30)
+            }
+        }
+    }
+}
 # Читаем события Windows после сохранённой позиции. В запись файла переносим процесс, пользователя и использованные права.
 function Import-SecurityEvents([datetime]$Through) {
     $script:backlog=$false
@@ -361,7 +480,7 @@ function Import-SecurityEvents([datetime]$Through) {
         if ($initial) { $state.cursor=$initial.id; $state.cursorTime=$initial.time }
     }
     $latest=Get-LogAnchor "*[System[TimeCreated[@SystemTime <= '$bound']]]" $true
-    if (!$latest) { return }
+    if (!$latest) { Complete-TransferObservations $Through; return }
     # После очистки Security номер записи может повториться. Сверяем также сохранённое время.
     $anchor=$null
     if ($state.cursor -gt 0) { $anchor=Get-LogAnchor "*[System[EventRecordID=$($state.cursor)]]" $false }
@@ -421,29 +540,39 @@ function Import-SecurityEvents([datetime]$Through) {
                     # Определяем СНИ по пути объекта и времени сеанса для обеих подкатегорий.
                     $match=Find-Session $fields.ObjectName $date
                     $mask=[convert]::ToUInt32($fields.AccessMask,16)
+                    # Собственные чтения при сверке SHA-256 не являются копированием пользователем.
+                    $ownRead=$fields.SubjectUserSid -eq 'S-1-5-19' -and $fields.ProcessId -and
+                        [convert]::ToUInt32($fields.ProcessId,16) -eq $PID
                     if ($match) {
                         $account=$fields.SubjectUserName
                         if ($fields.SubjectDomainName) { $account=$fields.SubjectDomainName+'\'+$account }
-                        # При сверке содержимого сам сборщик читает исходник. Это его техническое обращение.
-                        $ownRead=$fields.SubjectUserSid -eq 'S-1-5-19' -and $fields.ProcessId -and
-                            [convert]::ToUInt32($fields.ProcessId,16) -eq $PID
                         if (!$ownRead) {
                             New-Entry 'file' $date @{session=$match.session;deviceId=$match.deviceId;serial=$match.serial;model=$match.model
                                 account=$account;path=$fields.ObjectName;process=$fields.ProcessName;action=Get-AccessDescription $mask
                                 accessMask=$fields.AccessMask;recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
-                            if ($script:transferFolders.Count -and ($mask -band 1)) {
-                                $sourcePath=ConvertTo-TransferSource $fields.ObjectName $match $date
-                                if ($sourcePath -notin @($match.bindings | ForEach-Object { $_.path })) {
-                                    Add-TransferObservation 'read' $sourcePath $fields $match $date $record.RecordId
+                            if ($mask -band 7) {
+                                $usbPath=ConvertTo-TransferSource $fields.ObjectName $match $date
+                                if ([IO.Path]::GetFileName($usbPath) -and $usbPath -notin @($match.bindings | ForEach-Object { $_.path })) {
+                                    if ($script:transferFolders.Count -and ($mask -band 1)) {Add-TransferObservation 'read' $usbPath $fields $match $date $record.RecordId}
+                                    if ($mask -band 6) {
+                                        Add-TransferObservation 'write' $usbPath $fields $match $date $record.RecordId -ToUsb
+                                        Add-AuditedUsbWrite $fields.ObjectName $usbPath $match $fields $date $record.RecordId
+                                    }
                                 }
                             }
                         }
                     } elseif ($record.Task -eq 12812) {
                         $unmapped++
-                    } elseif ($script:transferFolders.Count -and ($mask -band 6)) {
-                        $destination=ConvertTo-TransferDestination $fields.ObjectName
-                        if ($destination -and (Test-TransferSessionNear $date) -and !(Find-Session $destination $date)) {
-                            Add-TransferObservation 'write' $destination $fields $null $date $record.RecordId
+                    } elseif (!$ownRead -and ($mask -band 7) -and (Test-TransferSessionNear $date)) {
+                        $local=ConvertTo-TransferDestination $fields.ObjectName
+                        if ($local -and !(Find-Session $local $date)) {
+                            if ($mask -band 6) {Add-TransferObservation 'write' $local $fields $null $date $record.RecordId}
+                        }
+                        if ($mask -band 1) {
+                            # 4663 может уже существовать для любого файла на локальном диске.
+                            # Папки из настроек определяют назначения только для обратного направления.
+                            if (!$local) { $local=ConvertTo-LocalReadPath $fields.ObjectName $date }
+                            if ($local -and !(Find-Session $local $date)) {Add-TransferObservation 'read' $local $fields $null $date $record.RecordId -ToUsb}
                         }
                     }
                 }
@@ -480,6 +609,7 @@ try {
         Publish-Pending
     }
     Initialize-TransferQueue
+    $script:volumeWatches=@{}
     $script:transferFolders=@()
     try { $script:transferFolders=@(Get-TransferFolders (Join-Path $PSScriptRoot 'destinations.json')) }
     catch { Add-Notice 'destination-config' ('Ошибка настроек папок назначения: '+$_.Exception.Message) }
@@ -553,6 +683,8 @@ try {
                 Add-Notice 'inventory-error' ('Ошибка опроса USB-устройств: '+$_.Exception.Message)
             }
         }
+        Update-VolumeChangeWatchers $now
+        Update-KernelTransferObserver $now
         if ($script:transferFolders.Count) { Update-TransferWatchers $watchConnected $now }
         if ($lastScan -gt [datetime]::MinValue -and ($script:backlog -or ($now-$lastRead).TotalSeconds -ge 1)) {
             try {
@@ -585,6 +717,8 @@ try {
                 if ($state.cursor -ne $before) { $dirty=$true }
             } catch {
                 Add-Notice 'security-error' ('Чтение журнала «Безопасность» недоступно: '+$_.Exception.Message)
+                # Данные ETW самостоятельны, даже если Windows временно запрещает чтение Security.
+                if ($through) {Complete-TransferObservations ($through.AddSeconds(-2)) -KernelOnly}
             }
             $lastRead=$now
         }
@@ -604,6 +738,8 @@ try {
         if ($script:backlog) { Start-Sleep -Milliseconds 50 } else { Start-Sleep -Milliseconds 700 }
     }
 } finally {
+    if ($script:kernelObserver) {$script:kernelObserver.Dispose()}
+    if ($script:volumeWatches) { foreach ($slot in $script:volumeWatches.Values) { if ($slot.watch) { $slot.watch.Dispose() } } }
     if ($script:folderWatches) { foreach ($watch in $script:folderWatches.Values) { $watch.Dispose() } }
     if ($subscription) { Unregister-Event -SourceIdentifier $source -ErrorAction SilentlyContinue }
     $instance.Dispose()

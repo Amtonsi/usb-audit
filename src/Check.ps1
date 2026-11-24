@@ -123,7 +123,7 @@ foreach ($name in 'LocalUsbAuditCollector','LocalUsbAuditMaintenance') {
         Show-Check $name ($task.State.ToString() -in $want) $task.State.ToString()
     } catch { Show-Check $name $false $_.Exception.Message }
 }
-foreach ($fileName in 'Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1','ArchiveAudit.ps1','TransferAudit.ps1','DestinationAudit.ps1','destinations.json') {
+foreach ($fileName in 'Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1','ArchiveAudit.ps1','TransferAudit.ps1','DestinationAudit.ps1','KernelFileTrace.cs','KernelTransferMatcher.cs','destinations.json') {
     $path = Join-Path $program $fileName
     Show-Check $fileName (Test-Path -LiteralPath $path -PathType Leaf) $path
 }

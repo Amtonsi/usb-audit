@@ -8,7 +8,7 @@ if (!$PSBoundParameters.ContainsKey('OutputPath')) {
 }
 $compiler = Join-Path $env:SystemRoot 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 # Имена ресурсов становятся частью EXE. По этим же именам установщик извлекает рабочие файлы.
-$resourceNames = 'Access.ps1','Collector.ps1','Install.ps1','Report.ps1','viewer.html','Maintenance.ps1','Check.ps1','ArchiveAudit.ps1','TransferAudit.ps1','DestinationAudit.ps1'
+$resourceNames = 'Access.ps1','Collector.ps1','Install.ps1','Report.ps1','viewer.html','Maintenance.ps1','Check.ps1','ArchiveAudit.ps1','TransferAudit.ps1','DestinationAudit.ps1','KernelFileTrace.cs','KernelTransferMatcher.cs'
 $source = Join-Path $PSScriptRoot 'Launcher.cs'
 $destination = [IO.Path]::GetFullPath($OutputPath)
 if ([IO.Path]::GetExtension($destination) -ine '.exe') { throw 'OutputPath must have the .exe extension.' }

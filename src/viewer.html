@@ -15,7 +15,7 @@
 </head>
 <body>
 <main>
-<header class="mast"><div><span id="demo" class="demo" hidden>Демонстрационные данные</span><h1>Журнал USB</h1><p class="sub" id="as-of"></p></div><button class="btn strong" type="button" id="export">Сохранить копию отчёта</button></header>
+<header class="mast"><div><span id="demo" class="demo" hidden>Демонстрационные данные</span><h1>Журнал USB</h1><p class="sub" id="as-of"></p><p class="sub" id="live-state"></p></div><button class="btn strong" type="button" id="export">Сохранить копию отчёта</button></header>
 <section class="metrics" aria-label="Всего в открытом отчёте"><div class="metric"><strong id="total-devices">0</strong><span>Носителей</span></div><div class="metric"><strong id="total-sessions">0</strong><span>Подключений</span></div><div class="metric"><strong id="total-files">0</strong><span id="total-files-label">Строк изменений</span></div></section>
 <details id="alarm" class="box notice" hidden><summary>Состояние сбора <span class="small" id="notice-count"></span></summary><ul id="notice-list"></ul><div id="notice-pages"></div></details>
 <section class="box panel" aria-label="Фильтры"><div class="tools"><label>Файловые операции<select id="file-mode"><option value="changes" selected>Изменения файлов</option><option value="all">Все обращения</option></select></label><label class="wide">Поиск<input id="search" type="search" autocomplete="off" placeholder="Идентификатор, серийный номер, файл или учётная запись"></label><label class="period">Дата с<input type="date" id="from"></label><label class="period">Дата по<input type="date" id="to"></label><button type="button" id="reset" class="btn">Сбросить</button></div><p id="range-error" role="alert"></p></section>
@@ -24,16 +24,18 @@
 <section class="box" id="history" hidden><div class="boxhead"><h2>История подключений</h2><p class="caption" id="history-caption"></p></div>
 <div class="identity"><p><b>Идентификатор СНИ</b><span class="mono" id="device-id"></span></p><p><b>Серийный номер СНИ</b><span class="mono" id="serial"></span></p></div>
 <div class="scroller"><table class="history-table" id="sessions"><colgroup><col style="width:24%"><col style="width:25%"><col style="width:24%"><col style="width:16%"><col style="width:11%"></colgroup><thead><tr><th>Начало наблюдения</th><th>Извлечение</th><th>Состояние сеанса</th><th>Диски</th><th id="session-files-label">Строк изменений</th></tr></thead><tbody></tbody></table></div><div id="session-pages"></div></section>
-<section class="box" id="outgoing" hidden><div class="boxhead"><h2>С носителя на компьютер</h2><p class="caption" id="transfer-caption"></p></div>
-<div class="scroller"><table class="transfers-table" id="transfers"><colgroup><col style="width:16%"><col style="width:24%"><col style="width:25%"><col style="width:18%"><col style="width:17%"></colgroup><thead><tr><th>Время</th><th>Файл на носителе</th><th>Файл на компьютере</th><th>Основание</th><th>Учётная запись и процесс</th></tr></thead><tbody></tbody></table></div>
+<section class="box" id="outgoing" hidden><div class="boxhead"><h2>Перенос файлов</h2><p class="caption" id="transfer-caption"></p></div>
+<div class="scroller"><table class="transfers-table" id="transfers"><colgroup><col style="width:16%"><col style="width:24%"><col style="width:25%"><col style="width:18%"><col style="width:17%"></colgroup><thead><tr><th>Время и направление</th><th>Исходный файл</th><th>Файл назначения</th><th>Основание</th><th>Учётная запись и процесс</th></tr></thead><tbody></tbody></table></div>
 <p id="empty-transfers" class="empty" hidden></p><div id="transfer-pages"></div>
-<p class="caption section-note">Путь назначения доступен для папок, выбранных при установке. В режиме «Все обращения» можно посмотреть чтение файлов с носителя.</p></section>
+<p class="caption section-note">Для операции Проводника показаны команда и результат проверки файла назначения. Папки приёма файлов с USB указываются при установке. Для остальных локальных папок в таблицу переносов попадают операции, которые удалось проверить по данным NTFS.</p>
+<div id="command-results" hidden><div class="boxhead"><h3>Команды Проводника без подтверждения</h3><p class="caption" id="command-caption"></p></div>
+<div class="scroller"><table class="transfers-table" id="shell-commands"><thead><tr><th>Время и направление</th><th>Исходный файл</th><th>Файл назначения</th><th>Команда и результат</th><th>Процесс</th></tr></thead><tbody></tbody></table></div><div id="command-pages"></div></div></section>
 <section class="box" id="operations" hidden><div class="boxhead"><h2>Файловые операции</h2><p class="caption" id="file-caption"></p></div>
 <div class="scroller"><table class="file-table" id="files"><colgroup><col style="width:16%"><col style="width:17%"><col style="width:20%"><col style="width:29%"><col style="width:18%"></colgroup><thead><tr><th>Время</th><th>Учётная запись</th><th>Действие</th><th>Файл на носителе</th><th>Процесс</th></tr></thead><tbody></tbody></table></div><p id="empty-files" class="empty" hidden></p><div id="file-pages"></div></section>
 <section class="box" id="archive-audit"><div class="boxhead"><h2>Действия с архивами</h2><p class="caption" id="archive-caption"></p></div>
 <div class="scroller"><table class="archives-table" id="archives"><colgroup><col style="width:15%"><col style="width:15%"><col style="width:23%"><col style="width:24%"><col style="width:23%"></colgroup><thead><tr><th>Время</th><th>Учётная запись</th><th>Действие и результат</th><th>Архив</th><th>Источник и процесс</th></tr></thead><tbody></tbody></table></div><p id="empty-archives" class="empty" hidden></p><div id="archive-pages"></div>
 <p id="archive-scope-note" class="caption section-note" hidden>Для просмотра действий после закрытия этого архива откройте общий журнал.</p></section>
-<footer>Время отображается в часовом поясе просмотра. Для получения новых записей сформируйте отчёт повторно.</footer>
+<footer>Время отображается в часовом поясе просмотра.</footer>
 <noscript><p>Для просмотра истории требуется включённый JavaScript в браузере.</p></noscript>
 </main>
 <!-- USB-AUDIT-DATA -->
@@ -57,7 +59,7 @@ const notices = (meta.problems || []).map(message=>({time:NaN,message}));
 const sessions = new Map(), seen = new Set(), seenFile = new Set(), archiveEvents=[];
 let totalFiles = 0, totalChanges = 0;
 function getSession(id){
-    if(!sessions.has(id)) sessions.set(id,{key:id,start:null,end:null,unknown:false,items:[],transfers:[],model:'',deviceId:'',serial:'',volumes:[],roots:new Set(),volumeTime:-Infinity});
+    if(!sessions.has(id)) sessions.set(id,{key:id,start:null,end:null,unknown:false,items:[],transfers:[],commands:[],model:'',deviceId:'',serial:'',volumes:[],roots:new Set(),volumeTime:-Infinity});
     return sessions.get(id);
 }
 // Имена томов Windows встречаются с буквами дисков, GUID, в формате NT и в виде папок монтирования.
@@ -90,37 +92,151 @@ function changeAction(record){
     const action=rights.join(' и ');
     return action.charAt(0).toUpperCase()+action.slice(1);
 }
+const volumeActions=new Map([['created','Создано на носителе'],['changed','Изменено на носителе'],
+    ['deleted','Удалено с носителя'],['renamed','Переименовано или перемещено']]);
+function recyclePath(path){return /(?:^|\\)\$recycle\.bin(?:\\|$)/i.test(path)}
+function technicalPath(path){return recyclePath(path) || /(?:^|\\)system volume information(?:\\|$)/i.test(path)}
+function verifiedCopy(t){return ['matchingContent','observedMatchingContent','kernelMatchingContent'].includes(t.evidence)}
+function kernelCopy(t){return t.evidence==='pairedKernelAccess' || t.evidence==='kernelMatchingContent'}
+function shellTransfer(t){return t.source==='shellFileOperation' && t.evidence==='shellDestinationObserved' &&
+    (t.operation==='copy' || t.operation==='move')}
+function shellCommandName(e){return e.operation==='move'?'Команда «Переместить»':'Команда «Копировать»'}
+function kernelObservation(t){
+    return t.source==='kernelReadSecurityWrite'?'Чтение — ETW, запись — Windows Security 4663':'События чтения и записи ядра Windows (ETW)';
+}
 // Окно каждой группы отсчитывается от первого события. Отдельные записи аудита остаются в items.
 function groupChanges(s){
-    const latest=new Map(), groups=[];
+    const latest=new Map(), groups=[], notifications=new Map();
+    // Путь на флешке может использоваться много раз. Привязываем источник только к
+    // указанной сборщиком записи Security или конкретному уведомлению этого сеанса.
+    const copies=new Map();
+    for(const t of s.transfers){
+        if(t.direction!=='toUsb')continue;
+        for(const k of [t.destinationEventUid,t.destinationRecordId!=null && t.logEpoch ?
+            JSON.stringify([t.logEpoch,t.destinationRecordId]) : null]){
+            if(!k)continue;
+            if(!copies.has(k))copies.set(k,[]);
+            copies.get(k).push(t);
+        }
+    }
+    function linkCopies(group,e){
+        for(const k of [e.uid,e.eventKey]){
+            for(const t of copies.get(k)||[])(group.toUsb??=new Set()).add(t);
+        }
+    }
     for(let i=s.items.length-1;i>=0;i--){
         const e=s.items[i];
         if(!e.change)continue;
         const path=pathKey(e.path);
         if(isVolumeRoot(path,s.roots))continue;
+        if(technicalPath(path) && (!e.oldPath || technicalPath(e.oldPath)))continue;
+        if(e.volumeChange){
+            let list=notifications.get(path);
+            if(!list){list=[];notifications.set(path,list)}
+            const previous=list[list.length-1];
+            // Windows может прислать несколько Changed при одном создании. Удаление
+            // и новое создание того же имени всегда открывают отдельные строки.
+            if(previous && e.time>=previous.first && e.time-previous.first<=2000 &&
+                ((e.volumeChange==='changed' && ['created','changed'].includes(previous.volumeChange)) ||
+                (e.volumeChange==='created' && previous.volumeChange==='changed' && e.time===previous.first))){
+                if(e.volumeChange==='created'){previous.volumeChange='created';previous.action=e.action}
+                previous.time=e.time;previous.count++;
+                linkCopies(previous,e);
+            }else{
+                const group={...e,first:e.time,count:1};
+                linkCopies(group,e);
+                list.push(group);groups.push(group);
+            }
+            continue;
+        }
         const key=JSON.stringify([path,norm(e.account),norm(e.process)]);
         const previous=latest.get(key);
         if(e.account && e.process && previous && previous.action===e.change && e.time<=previous.until){
             previous.count++;previous.time=e.time;
+            linkCopies(previous,e);
         }else{
             const endOfDay=new Date(e.time);
             endOfDay.setHours(23,59,59,999);
-            const group={time:e.time,until:Math.min(e.time+2000,endOfDay.getTime()),account:e.account,
+            const group={time:e.time,first:e.time,until:Math.min(e.time+2000,endOfDay.getTime()),account:e.account,
                 path:e.path,process:e.process,action:e.change,count:1};
+            linkCopies(group,e);
             groups.push(group);latest.set(key,group);
         }
     }
-    return groups.sort((a,b)=>b.time-a.time);
+    // Скрываем повтор строки аудита только при одном подходящем уведомлении
+    // с тем же путём в этом сеансе. Автор остаётся связан с записью Security.
+    const visible=groups.filter(g=>{
+        if(g.volumeChange)return true;
+        const list=notifications.get(pathKey(g.path));
+        if(!list)return true;
+        const matchesWrite=g.action==='Запись данных', matchesDelete=g.action==='Использование права удаления';
+        if(!matchesWrite && !matchesDelete)return true;
+        let low=0, high=list.length;
+        while(low<high){const mid=Math.floor((low+high)/2);if(list[mid].time<g.first-2000)low=mid+1;else high=mid}
+        let match;
+        for(let j=low;j<list.length && list[j].first<=g.time+2000;j++){
+            const n=list[j];
+            if(matchesWrite ? !['created','changed'].includes(n.volumeChange) : n.volumeChange!=='deleted')continue;
+            if(match)return true;
+            match=n;
+        }
+        if(!match)return true;
+        (match.accesses??=[]).push(g);match.count+=g.count;
+        for(const t of g.toUsb||[])(match.toUsb??=new Set()).add(t);
+        return false;
+    });
+    const shown=new Set(), writesByPath=new Map();
+    for(const g of visible){
+        for(const t of g.toUsb||[])shown.add(t);
+        if(g.action!=='Запись данных' && !['created','changed','renamed'].includes(g.volumeChange))continue;
+        const path=pathKey(g.path);
+        if(!writesByPath.has(path))writesByPath.set(path,[]);
+        writesByPath.get(path).push(g);
+    }
+    // У ETW отдельная нумерация. Объединить две строки отображения можно при
+    // взаимно однозначном совпадении полного пути и времени в этом сеансе.
+    const candidates=new Map();
+    for(const t of s.transfers){
+        if((!kernelCopy(t) && !shellTransfer(t)) || t.direction!=='toUsb' || t.destinationEventUid || t.destinationRecordId!=null)continue;
+        const nearby=new Set();
+        for(const k of new Set([pathKey(t.usbNtPath),pathKey(t.destination)])){
+            const rows=writesByPath.get(k)||[];
+            let lo=0,hi=rows.length;
+            while(lo<hi){const mid=Math.floor((lo+hi)/2);if(rows[mid].first<t.time-4000)lo=mid+1;else hi=mid}
+            for(let i=lo;i<rows.length && rows[i].first<=t.time+2000;i++){
+                if(rows[i].time>=t.time-2000)nearby.add(rows[i]);
+            }
+        }
+        if(nearby.size===1){
+            const row=nearby.values().next().value;
+            candidates.set(row,candidates.has(row)?null:t);
+        }
+    }
+    for(const [g,t] of candidates){
+        if(!t || g.toUsb)continue;
+        g.toUsb=new Set([t]);shown.add(t);
+    }
+    // ETW может установить оба пути и без события Security или уведомления каталога.
+    // Также часть исходных событий может попасть в соседний архив.
+    for(const t of s.transfers){
+        if(t.direction==='toUsb' && !shown.has(t))
+            visible.push({time:t.time,path:t.destination,account:t.evidence==='observedMatchingContent'?'':t.account,
+                process:t.evidence==='observedMatchingContent'?'':t.process,toUsb:new Set([t])});
+    }
+    return visible.sort((a,b)=>b.time-a.time);
 }
 // Группируем записи по идентификатору носителя и отдельным сеансам его подключения.
 function addRecord(record){
     if(!record || typeof record!=='object') return false;
     const ms = Date.parse(record.time), type = record.type;
-    if(!Number.isFinite(ms) || !['status','connect','disconnect','end_unknown','file','transfer','archiveAudit'].includes(type)) return false;
+    if(!Number.isFinite(ms) || !['status','connect','disconnect','end_unknown','file','transfer','archiveAudit','shellCommand'].includes(type)) return false;
     if(type!=='status' && type!=='archiveAudit' && (typeof record.session!=='string' || !record.session)) return false;
+    if(type==='shellCommand' && (record.evidence!=='shellOutcomeUnknown' ||
+        !['copy','move'].includes(record.operation) || !['toUsb','fromUsb'].includes(record.direction) ||
+        typeof record.sourcePath!=='string' || !record.sourcePath || typeof record.destination!=='string' || !record.destination))return false;
     if(record.uid){if(seen.has(record.uid)) return true; seen.add(record.uid)}
     if(type==='transfer' && record.logEpoch!=null && record.sourceRecordId!=null && record.destinationRecordId!=null){
-        const key=JSON.stringify([type,record.logEpoch,record.sourceRecordId,record.destinationRecordId]);
+        const key=JSON.stringify([type,record.direction || 'fromUsb',record.logEpoch,record.sourceRecordId,record.destinationRecordId]);
         if(seenFile.has(key))return true;
         seenFile.add(key);
     }
@@ -154,10 +270,26 @@ function addRecord(record){
             s.endSource=str(record.endSource);
             s.lastSeen=Date.parse(record.lastSeen);
         }
+    } else if(type==='shellCommand'){
+        // Известны пути из команды Windows. Результат не входит в статистику переносов и изменений.
+        s.commands.push({...record,time:ms});
     } else if(type==='transfer'){
+        if(record.direction==='toUsb' && (typeof record.localPath!=='string' || !record.localPath.includes('\\') ||
+            typeof record.destination!=='string' || !record.destination))return false;
         s.transfers.push({...record,time:ms});
     } else if(type==='file'){
-        const e={time:ms,account:str(record.account),action:str(record.action),path:str(record.path),process:str(record.process),change:changeAction(record)};
+        let volumeChange='',oldPath='',action=str(record.action),change=changeAction(record);
+        if(record.source==='volumeWatcher'){
+            volumeChange=record.change;
+            if(!volumeActions.has(volumeChange))return false;
+            oldPath=str(record.oldPath);
+            action=volumeChange==='renamed' && oldPath && !recyclePath(oldPath) && recyclePath(str(record.path)) ?
+                'Перемещено в корзину' : volumeActions.get(volumeChange);
+            change=action;
+        }
+        const e={time:ms,account:str(record.account),action,path:str(record.path),process:str(record.process),change,volumeChange,oldPath};
+        e.uid=record.uid;
+        if(record.recordId!=null && record.logEpoch)e.eventKey=JSON.stringify([record.logEpoch,record.recordId]);
         s.items.push(e); totalFiles++;
     }
     return true;
@@ -223,8 +355,9 @@ const stateNames={opened:'Открыт',closed:'Извлечён',unknown:'Не 
 for(const s of sessions.values()){
     s.items.sort((a,b)=>b.time-a.time);
     s.transfers.sort((a,b)=>b.time-a.time);
+    s.commands.sort((a,b)=>b.time-a.time);
     s.changes=groupChanges(s);totalChanges+=s.changes.length;
-    s.recent=s.start ?? s.end ?? Math.max(s.items[0]?.time ?? 0,s.transfers[0]?.time ?? 0);
+    s.recent=s.start ?? s.end ?? Math.max(s.items[0]?.time ?? 0,s.transfers[0]?.time ?? 0,s.commands[0]?.time ?? 0);
     const deviceKey = s.deviceId ? JSON.stringify([norm(s.deviceId),norm(s.serial)]) : 'session:'+s.key;
     if(!allDevices.has(deviceKey))allDevices.set(deviceKey,{key:deviceKey,model:s.model,deviceId:s.deviceId,serial:s.serial,sessions:[]});
     allDevices.get(deviceKey).sessions.push(s);
@@ -236,9 +369,10 @@ for(const d of allDevices.values()){
 notices.sort((a,b)=>(Number.isFinite(b.time)?b.time:Infinity)-(Number.isFinite(a.time)?a.time:Infinity));
 $('total-devices').textContent=nf.format(allDevices.size);$('total-sessions').textContent=nf.format(sessions.size);
 archiveEvents.sort((a,b)=>b.time-a.time);
-const pageSize = {device:15,session:15,file:40,notice:15,archive:20,transfer:20};
-const page = {device:0,session:0,file:0,notice:0,archive:0,transfer:0};
+const pageSize = {device:15,session:15,file:40,notice:15,archive:20,transfer:20,command:20};
+const page = {device:0,session:0,file:0,notice:0,archive:0,transfer:0,command:0};
 let selectedDevice='',selectedSession='',visible=[],key='',lower=-Infinity,upper=Infinity;
+let pinnedDevice=false,pinnedSession=false;
 let showAll=false;
 function fileRows(s){return showAll?s.items:s.changes}
 function el(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e}
@@ -263,14 +397,19 @@ function buttons(target,group,total,refresh){
     }
     box.append(nav);
 }
-function paged(arr,g){return arr.slice(page[g]*pageSize[g],(page[g]+1)*pageSize[g])}
+function paged(arr,g){
+    page[g]=Math.min(page[g],Math.max(0,Math.ceil(arr.length/pageSize[g])-1));
+    return arr.slice(page[g]*pageSize[g],(page[g]+1)*pageSize[g]);
+}
 function drawNotices(){
     $('alarm').hidden=notices.length===0;$('notice-count').textContent=nf.format(notices.length);
     const list=$('notice-list');list.replaceChildren();
     for(const n of paged(notices,'notice'))list.append(el('li',(Number.isFinite(n.time)?formatTime(n.time)+' · ':'')+n.message));
     buttons('notice-pages','notice',notices.length,drawNotices);
 }
-function fileMatches(e){return [e.account,e.path,e.action,e.process,e.destination,e.sha256].some(v=>norm(v).includes(key))}
+function fileMatches(e){return [e.account,e.path,e.oldPath,e.action,e.process,e.sourcePath,e.destination,e.localPath,e.sha256].some(v=>norm(v).includes(key)) ||
+    (e.toUsb && Array.from(e.toUsb).some(fileMatches)) ||
+    (e.accesses || []).some(a=>[a.account,a.process,a.action].some(v=>norm(v).includes(key)))}
 function drawArchiveAudit(){
     const matches=archiveEvents.filter(e=>e.time>=lower && e.time<=upper && (!key ||
         [e.archive,e.path,e.account,e.actorSid,e.action,e.result,e.source,e.process,e.requestId,e.recordId,e.eventId].some(v=>norm(v).includes(key))));
@@ -306,15 +445,15 @@ function filterReport(keepSelection=false){
     $('total-files-label').textContent=countLabel;$('session-files-label').textContent=countLabel;
     key=norm($('search').value.trim());lower=dateBound($('from').value,false);upper=dateBound($('to').value,true);
     $('range-error').textContent=lower>upper?'Начальная дата позже конечной. Проверьте период.':'';
-    visible=[];page.device=0;page.session=0;page.file=0;page.archive=0;page.transfer=0;
+    visible=[];page.device=0;page.session=0;page.file=0;page.archive=0;page.transfer=0;page.command=0;
     drawArchiveAudit();
     for(const d of allDevices.values()){
         const deviceMatch=!key || [d.deviceId,d.serial,d.model].some(v=>norm(v).includes(key));
         const hits=d.sessions.filter(s=>{
-            const start=s.start ?? Math.min(s.end ?? Infinity,s.items[s.items.length-1]?.time ?? Infinity,s.transfers[s.transfers.length-1]?.time ?? Infinity);
+            const start=s.start ?? Math.min(s.end ?? Infinity,s.items[s.items.length-1]?.time ?? Infinity,s.transfers[s.transfers.length-1]?.time ?? Infinity,s.commands[s.commands.length-1]?.time ?? Infinity);
             const end=s.end ?? (Number.isFinite(reportTime)? reportTime:Infinity);
             const matches=e=>e.time>=lower && e.time<=upper && fileMatches(e);
-            return lower<=upper && start<=upper && end>=lower && (deviceMatch || fileRows(s).some(matches) || s.transfers.some(matches));
+            return lower<=upper && start<=upper && end>=lower && (deviceMatch || fileRows(s).some(matches) || s.transfers.some(matches) || s.commands.some(matches));
         });
         if(hits.length)visible.push({device:d,hits,deviceMatch});
     }
@@ -332,7 +471,7 @@ function drawDevices(){
     const rows=paged(visible,'device');if(!rows.some(v=>v.device.key===selectedDevice)){selectedDevice=rows[0]?.device.key || '';selectedSession='';page.session=0;page.file=0;}
     for(const v of rows){
         const d=v.device;
-        const tr=createRow(body,d.key===selectedDevice,d.model||'Модель не указана',()=>{selectedDevice=d.key;selectedSession='';page.session=0;page.file=0;drawDevices()});
+        const tr=createRow(body,d.key===selectedDevice,d.model||'Модель не указана',()=>{pinnedDevice=true;pinnedSession=false;selectedDevice=d.key;selectedSession='';page.session=0;page.file=0;drawDevices()});
         cell(tr,d.deviceId||'Не зафиксирован','mono');cell(tr,d.serial||'Не предоставлен устройством','mono');cell(tr,nf.format(v.hits.length));
         cell(tr,formatTime(v.hits[0].recent),'time');cell(tr,badge(d.state));
     }
@@ -353,7 +492,7 @@ function drawSessions(){
     const body=$('sessions').tBodies[0];body.replaceChildren();
     const rows=paged(v.hits,'session');if(!rows.some(s=>s.key===selectedSession)){selectedSession=rows[0]?.key || '';page.file=0}
     for(const s of rows){
-        const tr=createRow(body,s.key===selectedSession,formatTime(s.start),()=>{selectedSession=s.key;page.file=0;drawSessions()});
+        const tr=createRow(body,s.key===selectedSession,formatTime(s.start),()=>{pinnedDevice=pinnedSession=true;selectedSession=s.key;page.file=0;drawSessions()});
         if(s.start===null)tr.firstChild.append(el('div','В доступных журналах нет начала сеанса','small'));
         else if(s.observed)tr.firstChild.append(el('div','Уже обнаружен при сверке','small'));
         const endCell=cell(tr,s.unknown?'Не зафиксировано':s.end===null?'—':formatTime(s.end),'time');
@@ -370,49 +509,130 @@ function drawSessions(){
 }
 // Каждая строка связывает два пути. Совпадение событий и совпадение байтов различаются в отчёте.
 let transferSession='';
+function visibleEvent(e,v){return e.time>=lower && e.time<=upper && (v.deviceMatch || fileMatches(e))}
+function showTransferEmpty(s,v){
+    const empty=$('empty-transfers');
+    empty.textContent=s.transfers.length?'В заданном периоде и по текущему поиску переносов не найдено.':
+        'Для этого подключения пока нет сопоставленных исходных файлов и файлов назначения.';
+    if(s.commands.some(e=>visibleEvent(e,v))){
+        empty.textContent='По выбранным условиям переносов с проверенным назначением нет. Команды с известными путями приведены ниже в разделе «Команды Проводника без подтверждения».';
+        return;
+    }
+    const write=s.changes.some(e=>!e.toUsb && (['created','changed'].includes(e.volumeChange) ||
+        norm(e.action).includes('запись данных')) && visibleEvent(e,v));
+    if(write){
+        empty.textContent='В этом подключении зарегистрирована запись или изменение на USB. Исходный путь установить не удалось. Имя файла и время указаны в таблице «Файловые операции».';
+        return;
+    }
+    if(fileRows(s).some(e=>visibleEvent(e,v)))return;
+    // Ищем активность только у выбранного носителя, в пределах периода и текущего поиска.
+    const current=v.hits.indexOf(s);
+    const idx=v.hits.findIndex((candidate,i)=>i>current &&
+        (candidate.transfers.some(e=>visibleEvent(e,v)) || fileRows(candidate).some(e=>visibleEvent(e,v)) || candidate.commands.some(e=>visibleEvent(e,v))));
+    if(idx<0)return;
+    const previous=v.hits[idx], link=el('button','Открыть подключение с операциями от '+formatTime(previous.recent),'btn');
+    link.type='button';
+    link.addEventListener('click',()=>{
+        pinnedDevice=pinnedSession=true;selectedSession=previous.key;page.session=Math.floor(idx/pageSize.session);
+        page.file=0;drawSessions();
+        $('sessions').querySelector('button[aria-pressed="true"]')?.focus();
+    });
+    empty.append(' ',link);
+}
 function drawTransfers(){
     const s=sessions.get(selectedSession);if(!s)return;
-    if(transferSession!==s.key){page.transfer=0;transferSession=s.key}
+    if(transferSession!==s.key){page.transfer=0;page.command=0;transferSession=s.key}
     const v=visible.find(x=>x.device.key===selectedDevice);
-    const hits=s.transfers.filter(e=>e.time>=lower && e.time<=upper && (v.deviceMatch || fileMatches(e)));
+    const hits=s.transfers.filter(e=>visibleEvent(e,v));
     const body=$('transfers').tBodies[0];body.replaceChildren();
     for(const e of paged(hits,'transfer')){
-        const tr=el('tr');cell(tr,formatTime(e.time),'time');cell(tr,e.path || '—','mono');cell(tr,e.destination || '—','mono');
+        const toUsb=e.direction==='toUsb';
+        const tr=el('tr'),when=cell(tr,formatTime(e.time),'time');
+        when.append(el('div',toUsb?'Компьютер → USB':'USB → компьютер','small'));
+        cell(tr,(toUsb?e.localPath:e.path)||'—','mono');cell(tr,e.destination || '—','mono');
         const created=e.evidence==='observedCreation',observed=created || e.evidence==='observedMatchingContent';
-        const identical=e.evidence==='matchingContent' || e.evidence==='observedMatchingContent',paired=e.evidence==='pairedAccess';
-        const basis=cell(tr,identical?'Содержимое совпало':paired?'Вероятный перенос':created?'Возможный перенос':'Основание не указано');
+        const identical=verifiedCopy(e),paired=e.evidence==='pairedAccess' || e.evidence==='pairedKernelAccess';
+        const shell=shellTransfer(e);
+        const basis=cell(tr,shell?shellCommandName(e):identical?'Содержимое совпало':paired?'Вероятный перенос':created?'Возможный перенос':'Основание не указано');
+        if(shell){
+            const observation=e.destinationChange==='ChangeTime'?'Время изменения файла назначения по NTFS':'Зарегистрировано изменение файла назначения';
+            basis.append(el('div','Shell-Core 18905 · '+observation,'small'));
+        }
         if(created)basis.append(el('div','Появился одноимённый файл','small'));
         if(identical || created){
-            const change=e.destinationChange==='Created'?'Создание файла':e.destinationChange==='Renamed'?'Переименование файла':'';
-            basis.append(el('div',observed?['Уведомление папки назначения',change].filter(Boolean).join(' · '):'Чтение и запись в журнале Windows','small'));
+            const change={Created:'Создание файла',Renamed:'Переименование файла',Changed:'Изменение существующего файла'}[e.destinationChange] || '';
+            basis.append(el('div',observed?[toUsb?'Уведомление тома USB':'Уведомление папки назначения',change].filter(Boolean).join(' · '):
+                kernelCopy(e)?kernelObservation(e):'Чтение и запись в журнале Windows','small'));
         }
         if(created && Number.isSafeInteger(e.sourceBytes) && Number.isSafeInteger(e.destinationBytes))
             basis.append(el('div','Размер при проверке '+nf.format(e.sourceBytes)+' → '+nf.format(e.destinationBytes)+' байт','small'));
-        if(identical && e.sha256){
+        if((identical || shell) && e.sha256){
             const digest=el('details'),summary=el('summary','SHA-256');
             digest.append(summary,el('span',e.sha256,'mono'));basis.append(digest);
-        }else if(paired)basis.append(el('div','Совпали признаки чтения и записи','small'));
+        }else if(paired)basis.append(el('div',kernelCopy(e)?kernelObservation(e):'Совпали признаки чтения и записи','small'));
         const who=cell(tr,e.account || '—');
         if(e.process)who.append(el('div',e.process,'mono'));
-        if(observed)who.append(el('div','Только чтение с носителя. Автор записи неизвестен.','small'));
+        if((kernelCopy(e) || shell) && e.processId)who.append(el('div','PID '+e.processId,'small'));
+        if(observed)who.append(el('div',Array.isArray(e.sourceRecordIds) && e.sourceRecordIds.length>1 ?
+            'Несколько процессов или учётных записей читали исходный файл. Автор переноса неизвестен.' :
+            (toUsb?'Только чтение на компьютере.':'Только чтение с носителя.')+' Автор записи неизвестен.','small'));
         body.append(tr);
     }
     $('transfer-caption').textContent=nf.format(hits.length)+' из '+nf.format(s.transfers.length);
     $('empty-transfers').hidden=hits.length>0;
-    $('empty-transfers').textContent=s.transfers.length?'В заданном периоде и по текущему поиску переносов не найдено.':'Для этого подключения связать чтение с файлом в папке назначения не удалось.';
+    if(!hits.length)showTransferEmpty(s,v);
     buttons('transfer-pages','transfer',hits.length,drawTransfers);
+    drawShellCommands(s,v);
+}
+function drawShellCommands(s,v){
+    const hits=s.commands.filter(e=>visibleEvent(e,v)),body=$('shell-commands').tBodies[0];
+    body.replaceChildren();$('command-results').hidden=!hits.length;
+    for(const e of paged(hits,'command')){
+        const tr=el('tr'),when=cell(tr,formatTime(e.time),'time');
+        when.append(el('div',e.direction==='toUsb'?'Компьютер → USB':'USB → компьютер','small'));
+        cell(tr,e.sourcePath,'mono');cell(tr,e.destination,'mono');
+        const result=cell(tr,shellCommandName(e));result.append(el('div','Результат не подтверждён','small'));
+        const process=cell(tr,e.process || (e.processId?'':'—'),'mono');
+        if(e.processId)process.append(el('div','PID '+e.processId,'small'));
+        body.append(tr);
+    }
+    $('command-caption').textContent=nf.format(hits.length)+' из '+nf.format(s.commands.length);
+    buttons('command-pages','command',hits.length,()=>drawShellCommands(s,v));
 }
 function drawFiles(){
     const s=sessions.get(selectedSession);if(!s)return;
     const v=visible.find(x=>x.device.key===selectedDevice);
     const entries=fileRows(s);
-    const hits=entries.filter(e=>e.time>=lower && e.time<=upper && (v.deviceMatch||fileMatches(e)));
+    const hits=entries.filter(e=>visibleEvent(e,v));
     const body=$('files').tBodies[0];body.replaceChildren();
     for(const e of paged(hits,'file')){
         const tr=el('tr');cell(tr,formatTime(e.time),'time');cell(tr,e.account||'—');
-        const action=cell(tr,e.action||'—');
+        const action=cell(tr,e.toUsb?'':e.action||'—');
+        for(const t of e.toUsb||[]){
+            const local=t.localPath,slash=local.lastIndexOf('\\');
+            const directory=slash===2?local.slice(0,3):local.slice(0,slash);
+            const identical=verifiedCopy(t);
+            const shell=shellTransfer(t);
+            let title=identical?'Копирование на USB из каталога':'Вероятное копирование на USB из каталога';
+            if(shell)title=t.operation==='move'?'Перемещение на USB из каталога':'Копирование на USB из каталога';
+            action.append(el('div',title),el('div',directory,'mono'),el('div',shell?'Команда Windows и изменение файла назначения':
+                identical?'Содержимое совпало по SHA-256':'Совпали события чтения и записи','small'));
+        }
+        if(e.volumeChange)action.append(el('div','Уведомление файловой системы','small'));
+        if(e.accesses){
+            const details=el('details');details.append(el('summary','Windows Security'));
+            for(const a of e.accesses)details.append(el('div',[formatTime(a.time),a.action,a.account,a.process].filter(Boolean).join(' · '),'small'));
+            action.append(details);
+        }
         if(e.count>1)action.append(el('div','Обращений: '+nf.format(e.count),'small'));
-        cell(tr,e.path||'—','mono');cell(tr,e.process||'—','mono');body.append(tr);
+        const path=cell(tr,e.toUsb?Array.from(new Set(Array.from(e.toUsb,t=>t.destination))).join('\n'):e.path||'—','mono');
+        if(e.oldPath)path.append(el('div','Прежний путь: '+e.oldPath,'small'));
+        const process=cell(tr,e.process||'—','mono');
+        if(e.toUsb){
+            const ids=new Set(Array.from(e.toUsb,t=>(kernelCopy(t) || shellTransfer(t)) && t.processId).filter(Boolean));
+            for(const id of ids)process.append(el('div','PID '+id,'small'));
+        }
+        body.append(tr);
     }
     $('file-caption').textContent=(s.start===null?'Начало сеанса не зафиксировано':'Сеанс от '+formatTime(s.start))+' · Строк: '+nf.format(hits.length)+' из '+nf.format(entries.length)
         +(showAll?'':' · Исходных обращений в сеансе: '+nf.format(s.items.length));
@@ -429,11 +649,69 @@ for(const k of ['from','to'])$(k).addEventListener('change',filterReport);
 $('reset').onclick=()=>{clearTimeout(filterTimer);for(const k of ['search','from','to'])$(k).value='';$('file-mode').value='changes';filterReport()};
 $('export').onclick=()=>{
     const copy=document.documentElement.cloneNode(true);
-    for(const sel of ['table tbody','#notice-list','#device-pages','#session-pages','#file-pages','#notice-pages','#archive-pages','#transfer-pages'])copy.querySelectorAll(sel).forEach(node=>node.replaceChildren());
+    copy.querySelectorAll('link[data-refresh]').forEach(node=>node.remove());
+    const policy=copy.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    if(policy)policy.content=policy.content.replace("style-src 'unsafe-inline' file:;","style-src 'unsafe-inline';");
+    const portableMeta=Object.assign({},meta);delete portableMeta.liveUri;delete portableMeta.generation;
+    const embedded=copy.querySelector('#report-meta');
+    if(embedded){
+        const bytes=new TextEncoder().encode(JSON.stringify(portableMeta));
+        embedded.textContent=btoa(Array.from(bytes,c=>String.fromCharCode(c)).join(''));
+    }
+    copy.querySelector('#live-state').textContent='Сохранённый снимок';
+    for(const sel of ['table tbody','#notice-list','#device-pages','#session-pages','#file-pages','#notice-pages','#archive-pages','#transfer-pages','#command-pages'])copy.querySelectorAll(sel).forEach(node=>node.replaceChildren());
     const url=URL.createObjectURL(new Blob(['<!doctype html>\n',copy.outerHTML],{type:'text/html;charset=utf-8'}));
     const a=el('a');a.href=url;a.download='Журнал USB.html';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 };
-drawNotices();filterReport();
+// Браузер проверяет в своей папке только CSS-метку с номером версии и временем.
+// Экспорт и копия в другой папке сохраняют снимок и не обращаются к исходному компьютеру.
+const live=typeof meta.liveUri==='string' && norm(meta.liveUri)===norm(location.href.split(/[?#]/)[0]) && location.protocol==='file:';
+const saved=live && history.state?.usbAuditView;
+if(saved){
+    for(const k of ['search','from','to','file-mode'])$(k).value=saved.filters[k];
+    selectedDevice=saved.device;selectedSession=saved.session;pinnedDevice=!!saved.device;pinnedSession=!!saved.session;
+    $('alarm').open=!!saved.notices;
+}
+drawNotices();filterReport(!!saved);
+if(saved){
+    for(const k of ['file','transfer','command','archive','notice'])page[k]=saved.pages[k]||0;
+    drawFiles();drawTransfers();drawArchiveAudit();drawNotices();
+}
+if(!live) $('live-state').textContent='Сохранённый снимок';
+else {
+    const unavailable='Автообновление недоступно. Показан последний сформированный отчёт.';
+    $('live-state').textContent='Проверяется автообновление…';
+    let waiting=false;
+    function checkLive(){
+        if(waiting || document.hidden)return;
+        waiting=true;
+        const link=document.createElement('link');link.rel='stylesheet';link.dataset.refresh='1';
+        const timer=setTimeout(()=>finish(false),4000);
+        function finish(loaded){
+            if(!link.parentNode)return;
+            clearTimeout(timer);
+            const props=getComputedStyle(document.documentElement);
+            const generation=loaded?props.getPropertyValue('--usb-generation').trim():'';
+            const seen=loaded?Number(props.getPropertyValue('--usb-heartbeat').trim()):0;
+            const phase=loaded?props.getPropertyValue('--usb-state').trim():'';
+            link.remove();waiting=false;
+            const age=Date.now()/1000-seen;
+            if(!/^\d+$/.test(generation)||!Number.isFinite(age)||age>45||age< -10 || phase!=='ok'){
+                $('live-state').textContent=unavailable;return;
+            }
+            $('live-state').textContent='Автообновление включено';
+            if(generation!==meta.generation){
+                const filters={};for(const k of ['search','from','to','file-mode'])filters[k]=$(k).value;
+                history.replaceState({usbAuditView:{filters,device:pinnedDevice?selectedDevice:'',session:pinnedSession?selectedSession:'',notices:$('alarm').open,pages:page}},'');
+                location.reload();
+            }
+        }
+        link.onload=()=>finish(true);link.onerror=()=>finish(false);
+        link.href='./USB-Audit-status.css?t='+Date.now();document.head.append(link);
+    }
+    checkLive();setInterval(checkLive,5000);
+    document.addEventListener('visibilitychange',checkLive);
+}
 </script>
 </body>
 </html>

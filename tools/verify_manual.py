@@ -66,7 +66,8 @@ def verify(manual, exe):
         assert set(bundle.namelist()) == {*FILES, "LICENSE"}
         assert bundle.read("LICENSE") == license_file
         for name, lines in zip(FILES, doc.code):
-            raw = (BASE / "src" / name).read_bytes()
+            folder = "tools" if name == "Uninstall-UsbAudit.ps1" else "src"
+            raw = (BASE / folder / name).read_bytes()
             assert bundle.read(name) == raw, ("ZIP content", name)
             assert doc.downloads[name] == raw, ("download bytes", name)
             assert "".join(lines) == raw.decode("utf-8-sig"), ("full displayed listing", name)
