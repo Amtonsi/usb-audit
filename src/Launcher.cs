@@ -17,11 +17,15 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
+
 internal static class UsbAudit
 {
     internal static readonly string[] Files = {
         "Access.ps1", "Collector.ps1", "Install.ps1", "Report.ps1",
-        "viewer.html", "Maintenance.ps1", "Check.ps1"
+        "viewer.html", "Maintenance.ps1", "Check.ps1",
+        "ArchiveAudit.ps1", "TransferAudit.ps1", "DestinationAudit.ps1"
     };
     internal static readonly string ProgramRoot = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
     internal static readonly string Installed = Path.Combine(ProgramRoot, "LocalUsbAudit");
@@ -68,7 +72,7 @@ internal static class UsbAudit
                     "--self-test    проверить ресурсы и синтаксис PowerShell\n" +
                     "--extract ПАПКА    извлечь исходные компоненты в пустую папку\n" +
                     "--list-admins    показать доступных локальных администраторов и их SID\n" +
-                    "--install SID_ЧИТАТЕЛЯ [SID_АДМИНИСТРАТОРА]    установить с повышенными правами;\n" +
+                    "--install SID_ЧИТАТЕЛЯ [SID_АДМИНИСТРАТОРА [--watch-folder ПАПКА]...]    установить с повышенными правами;\n" +
                     "    если второй SID пропущен, откроется окно выбора ответственного за архивы.");
                 return 0;
             }
@@ -88,11 +92,23 @@ internal static class UsbAudit
                 Console.WriteLine("Извлечено компонентов: " + Files.Length);
                 return 0;
             }
-            if (((args.Length == 2 || args.Length == 3) && args[0] == "--install") || guiInstaller)
+            if ((args.Length >= 2 && args[0] == "--install") || guiInstaller)
             {
                 if (!Role.Admin()) throw new UnauthorizedAccessException("Установка требует прав администратора.");
                 string adminSid;
-                if (args.Length == 3) adminSid = ValidateAccountSid(args[2]);
+                string[] folders = new string[0];
+                if (args.Length >= 3)
+                {
+                    adminSid = ValidateAccountSid(args[2]);
+                    var paths = new List<string>();
+                    for (int i=3; i<args.Length; i+=2)
+                    {
+                        if (args[i] != "--watch-folder" || i+1 >= args.Length)
+                            throw new ArgumentException("Укажите --watch-folder и полный путь к папке.");
+                        paths.Add(args[i+1]);
+                    }
+                    folders = paths.ToArray();
+                }
                 else
                 {
                     // В окне после UAC доступны локальные УЗ, даже если оператору запрещено их перечислять.
@@ -102,9 +118,10 @@ internal static class UsbAudit
                     {
                         if (chooser.ShowDialog() != DialogResult.OK) { Console.WriteLine("Выбор отменён."); return 3; }
                         adminSid = chooser.SelectedSid;
+                        folders = chooser.SelectedFolders;
                     }
                 }
-                Install(ValidateAccountSid(args[1]), adminSid);
+                Install(ValidateAccountSid(args[1]), adminSid, folders);
                 Console.WriteLine("Установка завершена.");
                 return 0;
             }
@@ -166,7 +183,7 @@ internal static class UsbAudit
             "if($err.Count){throw ($name+' '+$err[0].Message)}}; exit 0";
         PsResult result = PowerShell(parser, Environment.SystemDirectory, source.ToString(), null);
         result.RequireSuccess();
-        Console.WriteLine("OK: 7 ресурсов, 6 сценариев PowerShell, шаблон HTML.");
+        Console.WriteLine("OK: {0} ресурсов, {1} сценариев PowerShell, шаблон HTML.", Files.Length, Files.Length-1);
     }
 
     private static void CheckNoLinks(string path)
@@ -246,6 +263,7 @@ internal static class UsbAudit
         internal readonly List<AdminAccount> Accounts = new List<AdminAccount>();
         internal string ConfiguredSid, ConfiguredName;
         internal bool PreviousInstallation;
+        internal readonly List<string> Folders = new List<string>();
     }
 
     internal static AdminCatalog LoadAdministrators(bool includeRegistration)
@@ -263,11 +281,15 @@ internal static class UsbAudit
             "[Console]::WriteLine('existing');" +
             "if($cfg.custodianMode -ceq 'ExistingAdmin' -and $cfg.custodianSid){" +
             "[Console]::WriteLine(('saved'+[char]9+$cfg.custodianSid+[char]9+(ToText64 $cfg.custodianAccount)))}};";
+        const string destinations =
+            "$dest=Join-Path (Split-Path -LiteralPath $meta) 'destinations.json';Assert-RegularPath $dest;" +
+            "if([IO.File]::Exists($dest)){$conf=[IO.File]::ReadAllText($dest)|ConvertFrom-Json;" +
+            "foreach($f in $conf.folders){[Console]::WriteLine(('folder'+[char]9+(ToText64 $f.path)))}};";
         const string candidates =
             "foreach($u in @(Get-UsbLocalAdministrators | Sort-Object Name)){" +
             "$name=[Environment]::MachineName+[char]92+$u.Name;" +
             "[Console]::WriteLine(('user'+[char]9+$u.SID.Value+[char]9+(ToText64 $name)))}";
-        string command = source + (includeRegistration ? registration : "") + candidates;
+        string command = source + (includeRegistration ? registration + destinations : "") + candidates;
         // Windows PowerShell компилирует встроенный вызов NetAPI во временной папке.
         // При высоких правах используем закрытый каталог с ACL SYSTEM/Администраторы.
         string stage = Role.Admin() ? NewStage() : null;
@@ -283,6 +305,11 @@ internal static class UsbAudit
         var catalog = new AdminCatalog();
         foreach (string line in result.Output.Split(new[]{'\r','\n'}, StringSplitOptions.RemoveEmptyEntries))
         {
+            if (line.StartsWith("folder\t",StringComparison.Ordinal))
+            {
+                catalog.Folders.Add(Utf8.GetString(Convert.FromBase64String(line.Substring(7))));
+                continue;
+            }
             if (line == "existing") { catalog.PreviousInstallation = true; continue; }
             string[] values = line.Split('\t');
             if (values.Length != 3 || (values[0] != "saved" && values[0] != "user"))
@@ -320,7 +347,7 @@ internal static class UsbAudit
         directory.Delete();
     }
 
-    private static void Install(string readerSid, string adminSid)
+    private static void Install(string readerSid, string adminSid, string[] folders)
     {
         string stage = NewStage();
         try
@@ -330,9 +357,12 @@ internal static class UsbAudit
             // SID читателя получен до повышения прав. SID ответственного повторно проверит Install.ps1.
             env["LOCALUSBAUDIT_READER"] = readerSid;
             env["LOCALUSBAUDIT_ADMIN_SID"] = adminSid;
+            // Имена папок передаются как данные, включая пробелы, кавычки PowerShell и кириллицу.
+            env["LOCALUSBAUDIT_FOLDERS"] = String.Join(",", folders.Select(p => Convert.ToBase64String(Utf8.GetBytes(p))));
             env["TEMP"] = env["TMP"] = Directory.CreateDirectory(Path.Combine(stage, "Temp")).FullName;
             string body = "Write-Host 'Установка журнала USB';" +
-                "& .\\Install.ps1 -ReaderUser $env:LOCALUSBAUDIT_READER -AdminSid $env:LOCALUSBAUDIT_ADMIN_SID -EnableHotPlugSecureOpen";
+                "$paths=@($env:LOCALUSBAUDIT_FOLDERS -split ',' | Where-Object {$_} | ForEach-Object {[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_))});" +
+                "& .\\Install.ps1 -DestinationFolders $paths -ReaderUser $env:LOCALUSBAUDIT_READER -AdminSid $env:LOCALUSBAUDIT_ADMIN_SID -EnableHotPlugSecureOpen";
             PowerShell(body, stage, null, env).RequireSuccess();
         }
         finally { RemoveDirectoryTree(new DirectoryInfo(stage)); }
@@ -437,6 +467,34 @@ internal static class UsbAudit
 
     // В UAC передаём только штатную Windows PowerShell, путь к установленному сценарию и фиксированные параметры.
     // Строка архива проверяется целиком. Пароль вводится уже в отдельном повышенном процессе.
+    [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    private static extern IntPtr RegisterEventSource(string server, string source);
+    [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    private static extern bool ReportEvent(IntPtr handle, ushort type, ushort category, uint id,
+        byte[] userSid, ushort count, uint size,
+        [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPWStr, SizeParamIndex=5)] string[] strings,
+        IntPtr data);
+    [DllImport("advapi32.dll", SetLastError=true)]
+    private static extern bool DeregisterEventSource(IntPtr handle);
+
+    // Читатель сообщает о выборе в Windows Application. Права записи в защищённый журнал ему не выдаются.
+    internal static void NoteArchiveChoice(string archive, int id)
+    {
+        if (archive==null || !ArchivePattern.IsMatch(archive) || id<4101 || id>4103)
+            throw new ArgumentException("Некорректное событие интерфейса.");
+        using (var identity=WindowsIdentity.GetCurrent())
+        {
+            var sid=new byte[identity.User.BinaryLength];
+            identity.User.GetBinaryForm(sid,0);
+            IntPtr handle=RegisterEventSource(null,"LocalUsbAuditMaintenance");
+            if (handle==IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+            try {
+                if (!ReportEvent(handle,4,0,(uint)id,sid,1,0,new[]{archive},IntPtr.Zero))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+            } finally { DeregisterEventSource(handle); }
+        }
+    }
+
     internal static ProcessStartInfo MaintenanceStart(string action, string archive)
     {
         string arguments = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File \"" +
@@ -496,7 +554,8 @@ internal static class UsbAudit
         CheckNoLinks(Installed);
         CheckProtectedAcl(Directory.GetAccessControl(Installed),false);
         // Обслуживание требует установленных файлов той же версии, что и открытый EXE.
-        // До завершения операции удерживаем оба файла открытыми с запретом записи и удаления.
+        // До завершения операции удерживаем эти файлы открытыми с запретом записи и удаления.
+        using (OpenVerifiedResource("ArchiveAudit.ps1"))
         using (OpenVerifiedResource("Maintenance.ps1"))
         using (OpenVerifiedResource("Access.ps1"))
         try
@@ -511,6 +570,7 @@ internal static class UsbAudit
         catch (Win32Exception error)
         {
             if (error.NativeErrorCode!=1223) throw;
+            if (action=="delete") NoteArchiveChoice(archive,4103);
             return new PsResult {Code=1223, Output="", Errors="Запрос UAC отменён. Операция с архивом не запущена."};
         }
     }
@@ -569,6 +629,8 @@ internal sealed class AdministratorPicker : Form
     private readonly Button confirm = Dashboard.Button("Продолжить");
     internal string SelectedSid { get { return ((UsbAudit.AdminAccount)accounts.SelectedItem).Sid; } }
 
+    private readonly ListBox folders = new ListBox { Dock=DockStyle.Fill, Height=68, HorizontalScrollbar=true };
+    internal string[] SelectedFolders { get { return folders.Items.Cast<string>().ToArray(); } }
     internal AdministratorPicker(UsbAudit.AdminCatalog catalog)
     {
         Text = "Ответственный за архивы";
@@ -596,6 +658,20 @@ internal sealed class AdministratorPicker : Form
         AddLabel(layout, row++, "SID выбранной учётной записи");
         sid.AccessibleName = "SID выбранной учётной записи";
         layout.Controls.Add(sid, 0, row++);
+        AddLabel(layout, row++, "Папки, в которых отслеживается запись файлов с USB");
+        folders.AccessibleName = "Контролируемые папки назначения";
+        folders.Items.AddRange(catalog.Folders.Count == 0
+            ? new[]{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments),"USB-Audit-Inbox")}
+            : catalog.Folders.ToArray());
+        layout.Controls.Add(folders, 0, row++);
+        var addFolder = Dashboard.Button("Добавить папку…");
+        addFolder.AutoSize = true;
+        addFolder.Click += delegate {
+            using (var dialog = new FolderBrowserDialog {Description="Выберите существующую локальную папку NTFS для контроля записи", ShowNewFolderButton=false})
+                if (dialog.ShowDialog(this)==DialogResult.OK && !SelectedFolders.Contains(dialog.SelectedPath,StringComparer.OrdinalIgnoreCase))
+                    folders.Items.Add(dialog.SelectedPath);
+        };
+        layout.Controls.Add(addFolder, 0, row++);
         var current = catalog.Accounts.Find(a=>a.Sid==catalog.ConfiguredSid);
         if (catalog.Accounts.Count == 0)
             AddLabel(layout, row++, "На этом компьютере нет включённых локальных пользователей, напрямую входящих в группу администраторов.");
@@ -763,11 +839,19 @@ internal sealed class Archives : Form
         if(busy)return;
         string archive = action=="rotate" ? null : list.SelectedItem as string;
         if(action!="rotate" && archive==null)return;
-        if(action=="delete" && MessageBox.Show(this,"Удалить закрытый архив?\n\n"+archive,
-            UsbAudit.Title,MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
         busy=true;EnableButtons();
         try
         {
+            if(action=="delete")
+            {
+                UsbAudit.NoteArchiveChoice(archive,4101);
+                if(MessageBox.Show(this,"Удалить закрытый архив?\n\n"+archive,
+                    UsbAudit.Title,MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)
+                {
+                    UsbAudit.NoteArchiveChoice(archive,4102);
+                    return;
+                }
+            }
             UsbAudit.PsResult r=await Task.Run(()=>UsbAudit.Script(action,archive));
             r.RequireSuccess();
             if(action!="report") MessageBox.Show(this,action=="rotate" ? "Текущий журнал закрыт. Создан архив." :

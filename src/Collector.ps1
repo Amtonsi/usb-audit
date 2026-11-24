@@ -8,6 +8,8 @@ $journal = Join-Path $root 'Data\Active\events.jsonl'
 $journalLock = Join-Path $root 'State\journal.lock'
 $checkpoint = Join-Path $root 'State\collector.json'
 $utf8 = New-Object Text.UTF8Encoding($false)
+. (Join-Path $PSScriptRoot 'TransferAudit.ps1')
+. (Join-Path $PSScriptRoot 'ArchiveAudit.ps1')
 
 # Сборщик открывает существующий файл журнала с правом добавления строк.
 # Обычная запись через FileStream может потребовать также право менять прежнее содержимое.
@@ -369,11 +371,13 @@ function Import-SecurityEvents([datetime]$Through) {
         if ($oldest.id -gt $latest.id) { return }
         $state.cursor=[long]$oldest.id-1
         $state.logEpoch=[guid]::NewGuid().ToString()
+        $script:transferEvents.Clear()
+        $state.transferGapUntil=''
         Add-Notice 'retention' 'Изменился или был перезаписан журнал «Безопасность». Сбор продолжен с доступных записей.'
     }
-    if ($state.cursor -ge $latest.id) { return }
+    if ($state.cursor -ge $latest.id) { Complete-TransferObservations $Through; return }
     $range="(EventRecordID > $($state.cursor)) and (EventRecordID <= $($latest.id))"
-    $query="*[System[((EventID=4663 and Task=12812) or EventID=6416) and $range]]"
+    $query="*[System[((EventID=4663 and Task=12812) or ((EventID=4656 or EventID=4663) and Task=12800) or EventID=6416) and $range]]"
     $reader=New-SecurityReader $query $false
     $unmapped=0
     try {
@@ -403,15 +407,40 @@ function Import-SecurityEvents([datetime]$Through) {
                                 recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
                         }
                     }
+                } elseif ([int]$record.Task -eq 12800) {
+                    $denied=([long]$record.Keywords -band 0x0010000000000000L) -ne 0
+                    $archive=ConvertFrom-ArchiveSecurityEvent -EventId $record.Id -Fields $fields -Denied $denied -ArchiveDirectory (Join-Path $root 'Data\Archive')
+                    if ($archive) {
+                        $archive.recordId=[long]$record.RecordId
+                        $archive.logEpoch=$state.logEpoch
+                        New-Entry 'archiveAudit' $date $archive
+                    } elseif (!$denied -and $record.Id -eq 4663 -and $fields.ObjectType -eq 'File' -and
+                              $script:transferFolders.Count -and ([convert]::ToUInt32($fields.AccessMask,16) -band 6)) {
+                        $destination=ConvertTo-TransferDestination $fields.ObjectName
+                        if ($destination -and (Test-TransferSessionNear $date) -and !(Find-Session $destination $date)) {
+                            Add-TransferObservation 'write' $destination $fields $null $date $record.RecordId
+                        }
+                    }
                 } else {
                     $match=Find-Session $fields.ObjectName $date
                     if ($match) {
                         $mask=[convert]::ToUInt32($fields.AccessMask,16)
                         $account=$fields.SubjectUserName
                         if ($fields.SubjectDomainName) { $account=$fields.SubjectDomainName+'\'+$account }
-                        New-Entry 'file' $date @{session=$match.session;deviceId=$match.deviceId;serial=$match.serial;model=$match.model
-                            account=$account;path=$fields.ObjectName;process=$fields.ProcessName;action=Get-AccessDescription $mask
-                            accessMask=$fields.AccessMask;recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
+                        # При сверке содержимого сам сборщик читает исходник. Это его техническое обращение.
+                        $ownRead=$fields.SubjectUserSid -eq 'S-1-5-19' -and $fields.ProcessId -and
+                            [convert]::ToUInt32($fields.ProcessId,16) -eq $PID
+                        if (!$ownRead) {
+                            New-Entry 'file' $date @{session=$match.session;deviceId=$match.deviceId;serial=$match.serial;model=$match.model
+                                account=$account;path=$fields.ObjectName;process=$fields.ProcessName;action=Get-AccessDescription $mask
+                                accessMask=$fields.AccessMask;recordId=[long]$record.RecordId;logEpoch=$state.logEpoch}
+                            if ($script:transferFolders.Count -and ($mask -band 1) -and $fields.ObjectType -eq 'File') {
+                                $sourcePath=ConvertTo-TransferSource $fields.ObjectName $match $date
+                                if ($sourcePath -notin @($match.bindings | ForEach-Object { $_.path })) {
+                                    Add-TransferObservation 'read' $sourcePath $fields $match $date $record.RecordId
+                                }
+                            }
+                        }
                     } else { $unmapped++ }
                 }
                 $state.cursor=[long]$record.RecordId
@@ -421,10 +450,11 @@ function Import-SecurityEvents([datetime]$Through) {
     } finally { $reader.Dispose() }
     if ($state.cursor -lt $latest.id) {
         $script:backlog=$true
+        if ($state.cursorTime) { Complete-TransferObservations (Get-Instant $state.cursorTime) }
         if ($state.cursorTime -and ($Through-(Get-Instant $state.cursorTime)).TotalMinutes -gt 2) {
             Add-Notice 'backlog' 'Сборщик обрабатывает накопленные события. Последние операции появятся с задержкой.'
         }
-    }
+    } else { Complete-TransferObservations $Through }
     if ($unmapped) {
         Add-Notice 'unmapped' "Обнаружены операции со съёмными носителями без достоверной связи с сеансом. За этот опрос: $unmapped."
     }
@@ -445,6 +475,10 @@ try {
         if ($state.version -ne 1) { throw 'Unsupported collector state version.' }
         Publish-Pending
     }
+    Initialize-TransferQueue
+    $script:transferFolders=@()
+    try { $script:transferFolders=@(Get-TransferFolders (Join-Path $PSScriptRoot 'destinations.json')) }
+    catch { Add-Notice 'destination-config' ('Ошибка настроек папок назначения: '+$_.Exception.Message) }
     foreach ($s in $state.sessions) {
         if (!$s.end) { Close-Session $s (Get-Instant $s.lastSeen) 'collectorRestart' }
     }
@@ -459,6 +493,7 @@ try {
     $lastScan=[datetime]::MinValue
     $lastRead=[datetime]::MinValue
     $lastCommit=[datetime]::MinValue
+    $watchConnected=$false
     $lastAttempt=[datetime]::MinValue
     $retryScan=[datetime]::MinValue
     $script:backlog=$false
@@ -496,6 +531,7 @@ try {
                     Add-Notice 'gap' 'Был перерыв в наблюдении. Для подключённых устройств открыты новые сеансы.'
                 }
                 Refresh-Inventory $snapshot $signals $scanTime
+                $watchConnected=$snapshot.Count -gt 0
                 $lastScan=$scanTime
                 # Уведомление может опередить перечисление томов. На короткое время
                 # сохраняем его вместе с исходной отметкой времени подключения.
@@ -506,15 +542,22 @@ try {
             } catch {
                 $retryScan=[datetime]::UtcNow.AddSeconds(4)
                 if ($lastScan -gt [datetime]::MinValue -and ([datetime]::UtcNow-$lastScan).TotalSeconds -gt 30) {
+                    $watchConnected=$false
                     foreach ($s in $state.sessions) { if (!$s.end) { Close-Session $s (Get-Instant $s.lastSeen) 'observationGap' } }
                     $signals=@()
                 }
                 Add-Notice 'inventory-error' ('Ошибка опроса USB-устройств: '+$_.Exception.Message)
             }
         }
+        if ($script:transferFolders.Count) { Update-TransferWatchers $watchConnected $now }
         if ($lastScan -gt [datetime]::MinValue -and ($script:backlog -or ($now-$lastRead).TotalSeconds -ge 1)) {
             try {
                 $before=$state.cursor
+                if (!$lastArchiveUiRead -or ($now-$lastArchiveUiRead).TotalSeconds -ge 3) {
+                    try { if (Read-UsbArchiveInterfaceEvents) { $dirty=$true } }
+                    catch { Add-Notice 'archive-ui-error' ('Ошибка чтения уведомлений об архивах: '+$_.Exception.Message) }
+                    $lastArchiveUiRead=$now
+                }
                 # Обрабатываем события до момента последнего успешного сопоставления томов.
                 $through=$lastScan
                 foreach ($signal in $signals) { if ($signal.time -lt $through) { $through=$signal.time } }
@@ -541,7 +584,7 @@ try {
             }
             $lastRead=$now
         }
-        if ($script:pending.Count -or ($dirty -and ($now-$lastCommit).TotalSeconds -ge 30)) {
+        if ($script:pending.Count -or $script:transferWatchDirty -or ($dirty -and ($now-$lastCommit).TotalSeconds -ge 30)) {
             # Закрытый сеанс нужен для привязки запоздавших событий Security.
             # Его удаление из рабочего списка сохраняет историю в журнале.
             $cutoff=$now.AddHours(-1)
@@ -551,11 +594,13 @@ try {
             }
             $state.sessions=@($state.sessions | Where-Object { !$_.end -or (Get-Instant $_.end) -ge $cutoff })
             Commit-State
+            $script:transferWatchDirty=$false
             $lastCommit=$now
         }
         if ($script:backlog) { Start-Sleep -Milliseconds 50 } else { Start-Sleep -Milliseconds 700 }
     }
 } finally {
+    if ($script:folderWatches) { foreach ($watch in $script:folderWatches.Values) { $watch.Dispose() } }
     if ($subscription) { Unregister-Event -SourceIdentifier $source -ErrorAction SilentlyContinue }
     $instance.Dispose()
 }

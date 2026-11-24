@@ -32,6 +32,7 @@ foreach ($key in $machineEnvironment.Keys) {
     [Environment]::SetEnvironmentVariable($key,$machineEnvironment[$key])
 }
 . ([IO.Path]::Combine($PSScriptRoot,'Access.ps1'))
+. ([IO.Path]::Combine($PSScriptRoot,'ArchiveAudit.ps1'))
 if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Используйте Windows PowerShell 5.1.' }
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 if ($Action -eq 'Worker' -and $identity -ne 'S-1-5-18') { throw 'Внутренний обработчик запускается Планировщиком.' }
@@ -112,6 +113,7 @@ function Complete-Pending([IO.FileInfo]$Pending) {
     Assert-RegularPath $Pending.FullName
     Assert-RegularPath $dest
     Set-GuardedFile $Pending.FullName (Get-FileRules $config)
+    Set-ArchiveAuditRule -Path $Pending.FullName
     [IO.File]::Move($Pending.FullName,$dest)
 }
 function Get-CustodianAccount($Settings) {
@@ -152,13 +154,18 @@ function Invoke-Worker {
         if ($old -and $old.id -ceq $id) { return }
         $status = 'error'
         $message = ''
+        $auditAction = if ($job.action -eq 'Delete') { 'Удаление архива' } else { 'Закрытие журнала' }
+        $auditName = ''; $auditAccount = ''; $auditSid = ''
         try {
             $name = [string]$job.archive
             if ($name -cnotmatch $archivePattern) { throw 'Некорректное имя архива.' }
+            $auditName = $name
             $target = Join-Path $archives $name
             Assert-RegularPath $target
             Confirm-JobActor $job $config
-            $actor = "$(Get-CustodianAccount $config) [$($config.custodianSid)]"
+            $auditAccount = Get-CustodianAccount $config
+            $auditSid = [string]$config.custodianSid
+            $actor = "$auditAccount [$auditSid]"
             switch -CaseSensitive ([string]$job.action) {
                 'Rotate' {
                     if (!$name.EndsWith("-$id.jsonl",[StringComparison]::Ordinal)) { throw 'Имя архива не соответствует запросу.' }
@@ -198,6 +205,8 @@ function Invoke-Worker {
             $message = $_.Exception.Message
             try { Write-Ops 119 "Ошибка обслуживания. Запрос: $id. $message" } catch {}
         }
+        $auditResult = if ($status -eq 'ok') { $message } else { "Ошибка обработки: $message" }
+        Write-ArchiveOperationRecord $auditAction $auditName $auditResult $id 'worker' $auditAccount $auditSid
         Save-Message $responseFile @{id=$id;status=$status;message=$message} -Atomic
     } finally { $exclusive.Dispose() }
 }
@@ -285,7 +294,7 @@ function Submit-ArchiveRequest($Settings) {
         if ($prior -and (!$reply -or $prior.id -cne $reply.id)) {
             [void](Wait-Response ([string]$prior.id) $jobTask $Settings)
         }
-        $id = [Guid]::NewGuid().ToString('N')
+        $id = $operationId
         if ($Action -eq 'Rotate') { $Archive = 'usb-' + [DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'") + "-$id.jsonl" }
         Save-Message $requestFile @{id=$id;action=$Action;archive=$Archive;actorSid=$Settings.custodianSid;generation=$Settings.requestGeneration}
         $response = Wait-Response $id $jobTask $Settings
@@ -310,10 +319,17 @@ function Invoke-ArchiveOperation($Settings) {
                 if ($verified.User.Value -cne [string]$Settings.custodianSid) { throw 'SID учётной записи не совпадает с назначенным.' }
             } finally { $verified.Dispose() }
         } finally { $token.Dispose() }
+    } catch {
+        Write-ArchiveOperationRecord $operationName $Archive 'Проверка учётной записи отклонена' $operationId 'auth'
+        throw
     } finally { if ($password) { $password.Dispose() } }
     Submit-ArchiveRequest $Settings
 }
 # Rotate и Delete проходят одну и ту же проверку, включая запуск от имени ответственного.
+$operationId = [guid]::NewGuid().ToString('N')
+$operationName = if ($Action -eq 'Delete') { 'Удаление архива' } else { 'Закрытие журнала' }
+# Сохраняем запрос до проверки пароля: даже закрытое на этапе ввода окно оставляет след.
+Write-ArchiveOperationRecord $operationName $Archive 'Запрошено в программе' $operationId 'requested'
 Invoke-ArchiveOperation $config
 } finally {
     foreach ($key in $savedEnvironment.Keys) {

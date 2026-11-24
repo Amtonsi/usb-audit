@@ -53,9 +53,11 @@ def verify(manual, exe):
     assert set(doc.downloads) == {*FILES, "USB-Audit-sources.zip"}
     assert hashlib.sha256(exe.read_bytes()).hexdigest() in page
     assert f'<meta name="author" content="{AUTHOR}">' in page and f'USB-Audit {RELEASE}' in page
-    assert {"algorithm", "start", "uninstall", "license"} <= doc.ids
+    assert {"algorithm", "start", "outgoing", "archive-events", "uninstall", "license"} <= doc.ids
     assert page.index('id="algorithm"') < page.index('id="start"')
-    assert page.count('<svg class="audit-flow"') == 3
+    assert {"title-setup", "title-collect", "title-transfer", "title-actions"} <= doc.ids
+    assert page.count('<svg class="audit-flow"') == 4
+    assert {"TransferAudit.ps1", "ArchiveAudit.ps1", "DestinationAudit.ps1"} <= set(FILES)
     license_file = (BASE / "LICENSE").read_bytes()
     license_text = license_file.decode("utf-8")
     assert f"Copyright (c) 2026 {AUTHOR}" in license_text
@@ -70,7 +72,7 @@ def verify(manual, exe):
             assert "".join(lines) == raw.decode("utf-8-sig"), ("full displayed listing", name)
             assert hashlib.sha256(raw).hexdigest() in page, ("source digest", name)
             assert re.search(r"(?m)^\s*(?://|#|<!--|/\*)[^\n]*[А-Яа-яЁё]", raw.decode("utf-8-sig")), ("missing Russian comment", name)
-    print(f"Manual verified: {len(FILES)} full listings, original bytes and ZIP, EXE SHA-256, three diagrams, release, author and MIT license.")
+    print(f"Manual verified: {len(FILES)} full listings, original bytes and ZIP, EXE SHA-256, four diagrams, release, author and MIT license.")
 
 
 if __name__ == "__main__":

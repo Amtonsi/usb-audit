@@ -64,7 +64,9 @@ namespace LocalUsbAudit {
 
 foreach ($policy in @(
     @{Name='Аудит съёмных носителей'; Id='0cce9245-69ae-11d9-bed3-505054503030'},
-    @{Name='Аудит Plug and Play'; Id='0cce9248-69ae-11d9-bed3-505054503030'}
+    @{Name='Аудит Plug and Play'; Id='0cce9248-69ae-11d9-bed3-505054503030'},
+    @{Name='Аудит файловой системы'; Id='0cce921d-69ae-11d9-bed3-505054503030'; Required=3},
+    @{Name='Аудит отказов операций с дескрипторами'; Id='0cce9223-69ae-11d9-bed3-505054503030'; Required=2}
 )) {
     try {
         try {
@@ -81,6 +83,14 @@ foreach ($policy in @(
         }
         $success = ($flags -band 1) -ne 0
         $details = if ($success) { 'регистрация успешных операций включена' } else { 'регистрация успешных операций выключена' }
+        if ($policy.Required -eq 2) {
+            $success = ($flags -band 2) -ne 0
+            $details = if ($success) { 'отказы в доступе регистрируются' } else { 'регистрация отказов выключена' }
+        } elseif ($policy.Required -eq 3) {
+            $failure = ($flags -band 2) -ne 0
+            $details += if ($failure) { ', регистрация отказов включена' } else { ', регистрация отказов выключена' }
+            $success = $success -and $failure
+        }
         Show-Check $policy.Name $success $details
     } catch { Show-Check $policy.Name $false $_.Exception.GetBaseException().Message }
 }
@@ -113,7 +123,7 @@ foreach ($name in 'LocalUsbAuditCollector','LocalUsbAuditMaintenance') {
         Show-Check $name ($task.State.ToString() -in $want) $task.State.ToString()
     } catch { Show-Check $name $false $_.Exception.Message }
 }
-foreach ($fileName in 'Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1') {
+foreach ($fileName in 'Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1','ArchiveAudit.ps1','TransferAudit.ps1','DestinationAudit.ps1','destinations.json') {
     $path = Join-Path $program $fileName
     Show-Check $fileName (Test-Path -LiteralPath $path -PathType Leaf) $path
 }

@@ -32,6 +32,7 @@ function Get-UsbSnapshot {
     return $devices
 }
 function Register-WmiEvent {param($Query,$SourceIdentifier)}
+function Read-UsbArchiveInterfaceEvents {}
 function Unregister-Event {param($SourceIdentifier)}
 function Remove-Event {param($EventIdentifier)}
 function Get-Event {
@@ -63,6 +64,9 @@ function Start-Sleep {
 }
 '@
 $code = [IO.File]::ReadAllText([IO.Path]::GetFullPath($Source))
+# Dynamically created script blocks have no installation directory for the shared helpers.
+$sourceDir=[IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Source)).Replace("'","''")
+$code=$code.Replace('$PSScriptRoot',("'"+$sourceDir+"'"))
 $mark = '$instanceFile=Join-Path'
 $split = $code.IndexOf($mark,[StringComparison]::Ordinal)
 if ($split -lt 0) {throw 'Collector entry point changed'}

@@ -4,6 +4,7 @@
 param(
     [string[]]$ReaderUser = @(),
     [Alias('AdministratorSid')][string]$AdminSid,
+    [string[]]$DestinationFolders,
     [switch]$EnableHotPlugSecureOpen
 )
 $ErrorActionPreference = 'Stop'
@@ -11,7 +12,9 @@ if ($PSVersionTable.PSEdition -ne 'Desktop' -or ![Environment]::Is64BitProcess) 
     throw 'Запустите 64-разрядную Windows PowerShell 5.1 с правами администратора.'
 }
 . (Join-Path $PSScriptRoot 'Access.ps1')
-$sourceFiles = 'Access.ps1','Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1','Check.ps1','Install.ps1'
+. (Join-Path $PSScriptRoot 'ArchiveAudit.ps1')
+. (Join-Path $PSScriptRoot 'DestinationAudit.ps1')
+$sourceFiles = 'ArchiveAudit.ps1','DestinationAudit.ps1','TransferAudit.ps1','Access.ps1','Collector.ps1','Report.ps1','viewer.html','Maintenance.ps1','Check.ps1','Install.ps1'
 foreach ($name in $sourceFiles) {
     $inputFile = Join-Path $PSScriptRoot $name
     if (!(Test-Path -LiteralPath $inputFile -PathType Leaf)) { throw "В комплекте отсутствует $name" }
@@ -161,13 +164,16 @@ try {
     Set-GuardedDirectory (Join-Path $store 'State') "$baseAcl$stateRule"
     Set-GuardedFile $lockFile "$baseFile(A;;0x12019f;;;$w)"
     Set-GuardedFile $active (Get-FileRules $config -WritableLog)
-    if ($oldQueue) {
-        # Закрытые архивы имеют собственные ACL. Обновляем и их, сохраняя содержимое.
-        foreach ($archive in @(Get-ChildItem -LiteralPath $archives -File -Filter 'usb-*.jsonl')) {
-            if ($archive.Name -cmatch '\Ausb-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}\.jsonl\z') {
-                Set-GuardedFile $archive.FullName (Get-FileRules $config)
-            }
+    # Наследуемый SACL защищает каталог; существующие и перемещаемые архивы
+    # также проверяем отдельно, поскольку NTFS может сохранить прежний SACL при перемещении.
+    Set-ArchiveAuditRule -Path $archives -Directory
+    foreach ($archive in @(Get-ChildItem -LiteralPath $archives -File -Filter 'usb-*.jsonl')) {
+        if ($archive.Name -cmatch '\Ausb-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}\.jsonl\z') {
+            if ($oldQueue) { Set-GuardedFile $archive.FullName (Get-FileRules $config) }
+            Set-ArchiveAuditRule -Path $archive.FullName
         }
+    }
+    if ($oldQueue) {
         # Отзываем у прежней УЗ прямые права на служебные файлы старого назначения.
         foreach ($oldPath in $oldQueue) {
             if ($lockedSubmit -and $oldPath -eq $oldSubmitPath) { continue }
@@ -218,6 +224,15 @@ try {
         & "$env:SystemRoot\System32\auditpol.exe" /set "/subcategory:{$id-69AE-11D9-BED3-505054503030}" /success:enable | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "Не удалось включить аудит $id." }
     }
+    # Файловый аудит действует на объекты с подходящими SACL. Отказы нужны для 4656
+    # при попытках записи или удаления, успешный доступ также даёт события 4663.
+    & "$env:SystemRoot\System32\auditpol.exe" /set '/subcategory:{0CCE921D-69AE-11D9-BED3-505054503030}' /success:enable /failure:enable | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Не удалось включить аудит доступа к файлам.' }
+    # При отказе Windows 10/11 в открытии архива журнал 4656 требует также
+    # отказов в подкатегории «Операции с дескрипторами». Её аудиты успеха сохраняем.
+    & "$env:SystemRoot\System32\auditpol.exe" /set '/subcategory:{0CCE9223-69AE-11D9-BED3-505054503030}' /failure:enable | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Не удалось включить регистрацию отказов при открытии архива.' }
+    Set-UsbDestinationAudit -AppDirectory $app -Paths $DestinationFolders
     if (![Diagnostics.EventLog]::SourceExists($opsSource)) { New-EventLog -LogName Application -Source $opsSource }
     if ([Diagnostics.EventLog]::LogNameFromSourceName($opsSource,'.') -ne 'Application') { throw 'Источник журнала Windows занят.' }
     $pwshFlags = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File '

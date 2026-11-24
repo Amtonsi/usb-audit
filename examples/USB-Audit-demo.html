@@ -10,6 +10,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.5 Inter,"Segoe UI",Arial,sans-serif}main{max-width:1510px;margin:auto;padding:32px clamp(14px,4vw,66px) 56px}h1,h2,p{margin:0}h1{font-size:clamp(30px,3.5vw,46px);line-height:1.14;letter-spacing:-.045em}h2{font-size:20px;line-height:1.3;letter-spacing:-.02em}.mast{display:flex;justify-content:space-between;align-items:end;gap:16px;margin:6px 0 22px}.sub{color:var(--sub);font-size:13px;margin-top:7px}.demo{font-size:13px;font-weight:650;color:#794500;background:#fff0c7;display:inline-block;border-radius:4px;padding:4px 9px;margin-bottom:10px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);background:#153c45;color:white;border-radius:10px;margin:0 0 18px;padding:17px 0}.metric{padding:0 clamp(13px,2.5vw,32px);border-right:1px solid #48666e}.metric:last-child{border:0}.metric span{display:block;color:#d0e6e8;font-size:13px}.metric strong{display:block;font-size:28px;font-variant-numeric:tabular-nums;line-height:1.24}.box{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden}.boxhead{padding:16px 19px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.panel{padding:14px 19px}.tools{display:flex;flex-wrap:wrap;align-items:end;gap:10px}.tools .wide{min-width:230px;flex:2}.tools .period{min-width:130px}.tools label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--sub);font-weight:600}.tools input,button{font:inherit}.tools input{background:#fff;border:1px solid #aabdc2;color:var(--ink);border-radius:6px;padding:7px 9px;line-height:1.4;min-width:0;max-width:100%}.tools input:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #467bd0;outline-offset:2px}button{cursor:pointer}.btn{border:1px solid #b5c8cc;color:#234753;background:#fff;border-radius:6px;padding:7px 12px;font-size:14px;white-space:nowrap}.btn.strong{background:var(--teal);color:white;border-color:var(--teal);font-weight:600}.btn:hover{filter:brightness(.96)}button:disabled{opacity:.45;cursor:default}.scroller{overflow-x:auto}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{background:#f3f6f6}th{font-size:12px;color:var(--sub);font-weight:650;text-align:left;padding:8px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}td{padding:10px 12px;border-bottom:1px solid #e4eaed;vertical-align:top;overflow-wrap:anywhere}th:first-child,td:first-child{padding-left:19px}th:last-child,td:last-child{padding-right:19px}tbody tr:last-child td{border-bottom:0}.selectable:hover{background:#f6faf9}.selectable{cursor:pointer}.selected,.selected:hover{background:#eaf5f1}.selected td:first-child{box-shadow:inset 3px 0 0 #00785f}.rowbutton{color:#074f57;background:none;border:0;text-align:left;font:inherit;font-weight:650;padding:0;overflow-wrap:anywhere;max-width:100%}.rowbutton:hover{text-decoration:underline}.mono{font:13px/1.5 Consolas,"Courier New",monospace;overflow-wrap:anywhere}.small{font-size:12px;color:var(--sub)}.muted{color:var(--sub)}.status{font-size:12px;font-weight:650;display:inline-block;border-radius:4px;padding:2px 7px;line-height:1.45}.opened{background:#d9eee6;color:#085642}.closed{background:#eaf0f3;color:#385260}.unknown{background:#fff0cf;color:#784b00}.empty{padding:18px 19px;color:var(--sub)}.pages{margin:0;padding:8px 19px;display:flex;justify-content:flex-end;gap:10px;align-items:center;border-top:1px solid var(--line);font-size:13px;color:var(--sub)}.pages .btn{padding:3px 9px}.identity{background:#f3f7f7;display:flex;gap:16px;flex-wrap:wrap;margin:0 19px 14px;padding:9px 12px;border-radius:5px}.identity p{min-width:150px;max-width:100%}.identity b{display:block;color:var(--sub);font-size:12px}.identity span{display:block}.caption{font-size:13px;color:var(--sub)}summary{cursor:pointer;font-weight:600;padding:13px 19px}details ul{margin:0;padding:3px 22px 13px 38px}li{overflow-wrap:anywhere;margin-bottom:6px}.notice{border-color:#d9c89e;background:#fffaf0}#alarm .small{margin-left:6px}.tools .btn{align-self:end}#range-error{color:#9a3029;font-size:13px}footer{font-size:12px;color:var(--muted);margin-top:14px}[hidden]{display:none!important}.device-table{min-width:780px}.history-table{min-width:645px}.file-table{min-width:820px}.time{font-variant-numeric:tabular-nums}
 @media(max-width:720px){main{padding:15px 10px 30px}.mast{align-items:flex-start;flex-wrap:wrap}.metric strong{font-size:22px}.metric span{font-size:12px}.panel,.boxhead{padding:12px}.tools .wide{flex-basis:100%;min-width:0}.tools .period{flex:1;min-width:115px}.identity{margin:0 12px 12px}.scroller{scrollbar-color:#9db4b8 #f5f6f7}.boxhead .sub{margin-top:0}}
 .tools select{font:inherit;font-weight:400;color:var(--ink);background:white;border:1px solid #aabdc2;border-radius:6px;padding:7px 9px;min-height:36px;max-width:100%}.tools select:focus-visible{outline:3px solid #467bd0;outline-offset:2px}
+.archives-table{min-width:820px}.transfers-table{min-width:760px}.section-note{padding:8px 19px 12px}.transfers-table summary{padding:2px 0;font-size:12px}
 </style>
 </head>
 <body>
@@ -23,14 +24,21 @@
 <section class="box" id="history" hidden><div class="boxhead"><h2>История подключений</h2><p class="caption" id="history-caption"></p></div>
 <div class="identity"><p><b>Идентификатор СНИ</b><span class="mono" id="device-id"></span></p><p><b>Серийный номер СНИ</b><span class="mono" id="serial"></span></p></div>
 <div class="scroller"><table class="history-table" id="sessions"><colgroup><col style="width:24%"><col style="width:25%"><col style="width:24%"><col style="width:16%"><col style="width:11%"></colgroup><thead><tr><th>Начало наблюдения</th><th>Извлечение</th><th>Состояние сеанса</th><th>Диски</th><th id="session-files-label">Строк изменений</th></tr></thead><tbody></tbody></table></div><div id="session-pages"></div></section>
+<section class="box" id="outgoing" hidden><div class="boxhead"><h2>С носителя на компьютер</h2><p class="caption" id="transfer-caption"></p></div>
+<div class="scroller"><table class="transfers-table" id="transfers"><colgroup><col style="width:16%"><col style="width:24%"><col style="width:25%"><col style="width:18%"><col style="width:17%"></colgroup><thead><tr><th>Время</th><th>Файл на носителе</th><th>Файл на компьютере</th><th>Основание</th><th>Учётная запись и процесс</th></tr></thead><tbody></tbody></table></div>
+<p id="empty-transfers" class="empty" hidden></p><div id="transfer-pages"></div>
+<p class="caption section-note">Путь назначения доступен для папок, выбранных при установке. В режиме «Все обращения» можно посмотреть чтение файлов с носителя.</p></section>
 <section class="box" id="operations" hidden><div class="boxhead"><h2>Файловые операции</h2><p class="caption" id="file-caption"></p></div>
 <div class="scroller"><table class="file-table" id="files"><colgroup><col style="width:16%"><col style="width:17%"><col style="width:20%"><col style="width:29%"><col style="width:18%"></colgroup><thead><tr><th>Время</th><th>Учётная запись</th><th>Действие</th><th>Файл на носителе</th><th>Процесс</th></tr></thead><tbody></tbody></table></div><p id="empty-files" class="empty" hidden></p><div id="file-pages"></div></section>
+<section class="box" id="archive-audit"><div class="boxhead"><h2>Действия с архивами</h2><p class="caption" id="archive-caption"></p></div>
+<div class="scroller"><table class="archives-table" id="archives"><colgroup><col style="width:15%"><col style="width:15%"><col style="width:23%"><col style="width:24%"><col style="width:23%"></colgroup><thead><tr><th>Время</th><th>Учётная запись</th><th>Действие и результат</th><th>Архив</th><th>Источник и процесс</th></tr></thead><tbody></tbody></table></div><p id="empty-archives" class="empty" hidden></p><div id="archive-pages"></div>
+<p id="archive-scope-note" class="caption section-note" hidden>Для просмотра действий после закрытия этого архива откройте общий журнал.</p></section>
 <footer>Время отображается в часовом поясе просмотра. Для получения новых записей сформируйте отчёт повторно.</footer>
 <noscript><p>Для просмотра истории требуется включённый JavaScript в браузере.</p></noscript>
 </main>
-<script type="application/octet-stream" class="log-source" data-name="QWN0aXZlL2V2ZW50cy5qc29ubA==">eyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjAwWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJkZXZpY2VJZCI6ICJVU0JTVE9SXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxERU1PLUIyMTImMCIsICJzZXJpYWwiOiAiREVNTy1CMjEyIiwgIm1vZGVsIjogItCj0YfQtdCx0L3Ri9C5INC90LDQutC+0L/QuNGC0LXQu9GMIEIiLCAidm9sdW1lcyI6IFt7ImxldHRlciI6ICJFOiIsICJwYXRocyI6IFsiRTpcXCIsICJcXFxcP1xcVm9sdW1le2ZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkN31cXCIsICJcXERldmljZVxcSGFyZGRpc2tWb2x1bWU4Il19XX0KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjEyWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0J/Qu9Cw0L0ueGxzeCIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCn0YLQtdC90LjQtSDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDR9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMzoxMDoxOVoiLCAic2Vzc2lvbiI6ICJmZDAzODU2OS1lOTc5LTUwNmYtOGM4ZS0wOGEyOWY1ZjM4ZDciLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCh0LLQvtC00LrQsC5wZGYiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQl9Cw0L/QuNGB0Ywg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA1fQp7InR5cGUiOiAiZGlzY29ubmVjdCIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDM6MzI6MDBaIiwgInNlc3Npb24iOiAiZmQwMzg1NjktZTk3OS01MDZmLThjOGUtMDhhMjlmNWYzOGQ3In0KeyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjEwOjAwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCIsICJkZXZpY2VJZCI6ICJTQ1NJXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxMT0NBTC1JTlNUQU5DRS0wMDMmMCIsICJzZXJpYWwiOiBudWxsLCAibW9kZWwiOiAi0KPRh9C10LHQvdGL0LkgU1NEIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXthNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzB9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lOSJdfV19CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMFQwMToxMDoxMloiLCAic2Vzc2lvbiI6ICJhNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzAiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCf0LvQsNC9Lnhsc3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA2fQp7InR5cGUiOiAiZW5kX3Vua25vd24iLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjIwOjQwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCJ9CnsidHlwZSI6ICJjb25uZWN0IiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNTowMFoiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiZGV2aWNlSWQiOiAiVVNCU1RPUlxcRGlzayZWZW5fRGVtbyZQcm9kX1RyYWluaW5nRGlza1xcREVNTy1BMTA3JjAiLCAic2VyaWFsIjogIkRFTU8tQTEwNyIsICJtb2RlbCI6ICLQo9GH0LXQsdC90YvQuSDQvdCw0LrQvtC/0LjRgtC10LvRjCBBIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXtiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2Z9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lMTAiXX1dfQp7InR5cGUiOiAiZmlsZSIsICJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDU6MTJaIiwgInNlc3Npb24iOiAiYmRiNDI3YTctYjNhNy01ODBkLWE5MDgtZDE5OTkxYmVmOTdmIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJFOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQn9C70LDQvS54bHN4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwN30KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTIxVDA1OjA1OjE5WiIsICJzZXNzaW9uIjogImJkYjQyN2E3LWIzYTctNTgwZC1hOTA4LWQxOTk5MWJlZjk3ZiIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0KHQstC+0LTQutCwLnBkZiIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCX0LDQv9C40YHRjCDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDh9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNToyNloiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCg0LXQtdGB0YLRgC5kb2N4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwOX0K</script>
+<script type="application/octet-stream" class="log-source" data-name="QWN0aXZlL2V2ZW50cy5qc29ubA==">eyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjAwWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJkZXZpY2VJZCI6ICJVU0JTVE9SXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxERU1PLUIyMTImMCIsICJzZXJpYWwiOiAiREVNTy1CMjEyIiwgIm1vZGVsIjogItCj0YfQtdCx0L3Ri9C5INC90LDQutC+0L/QuNGC0LXQu9GMIEIiLCAidm9sdW1lcyI6IFt7ImxldHRlciI6ICJFOiIsICJwYXRocyI6IFsiRTpcXCIsICJcXFxcP1xcVm9sdW1le2ZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkN31cXCIsICJcXERldmljZVxcSGFyZGRpc2tWb2x1bWU4Il19XX0KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTE5VDAzOjEwOjEyWiIsICJzZXNzaW9uIjogImZkMDM4NTY5LWU5NzktNTA2Zi04YzhlLTA4YTI5ZjVmMzhkNyIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0J/Qu9Cw0L0ueGxzeCIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCn0YLQtdC90LjQtSDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDR9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMzoxMDoxOVoiLCAic2Vzc2lvbiI6ICJmZDAzODU2OS1lOTc5LTUwNmYtOGM4ZS0wOGEyOWY1ZjM4ZDciLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCh0LLQvtC00LrQsC5wZGYiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQl9Cw0L/QuNGB0Ywg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA1fQp7InR5cGUiOiAiZGlzY29ubmVjdCIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDM6MzI6MDBaIiwgInNlc3Npb24iOiAiZmQwMzg1NjktZTk3OS01MDZmLThjOGUtMDhhMjlmNWYzOGQ3In0KeyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjEwOjAwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCIsICJkZXZpY2VJZCI6ICJTQ1NJXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxMT0NBTC1JTlNUQU5DRS0wMDMmMCIsICJzZXJpYWwiOiBudWxsLCAibW9kZWwiOiAi0KPRh9C10LHQvdGL0LkgU1NEIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXthNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzB9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lOSJdfV19CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMFQwMToxMDoxMloiLCAic2Vzc2lvbiI6ICJhNmNhOWY3MS1jMzRjLTViYTQtYjcyMy1mYWM0ZmU0MmZmMzAiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCf0LvQsNC9Lnhsc3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDA2fQp7InR5cGUiOiAiZW5kX3Vua25vd24iLCAidGltZSI6ICIyMDI2LTExLTIwVDAxOjIwOjQwWiIsICJzZXNzaW9uIjogImE2Y2E5ZjcxLWMzNGMtNWJhNC1iNzIzLWZhYzRmZTQyZmYzMCJ9CnsidHlwZSI6ICJjb25uZWN0IiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNTowMFoiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiZGV2aWNlSWQiOiAiVVNCU1RPUlxcRGlzayZWZW5fRGVtbyZQcm9kX1RyYWluaW5nRGlza1xcREVNTy1BMTA3JjAiLCAic2VyaWFsIjogIkRFTU8tQTEwNyIsICJtb2RlbCI6ICLQo9GH0LXQsdC90YvQuSDQvdCw0LrQvtC/0LjRgtC10LvRjCBBIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRToiLCAicGF0aHMiOiBbIkU6XFwiLCAiXFxcXD9cXFZvbHVtZXtiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2Z9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lMTAiXX1dfQp7InR5cGUiOiAiZmlsZSIsICJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDU6MTJaIiwgInNlc3Npb24iOiAiYmRiNDI3YTctYjNhNy01ODBkLWE5MDgtZDE5OTkxYmVmOTdmIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJFOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQn9C70LDQvS54bHN4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwN30KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTIxVDA1OjA1OjE5WiIsICJzZXNzaW9uIjogImJkYjQyN2E3LWIzYTctNTgwZC1hOTA4LWQxOTk5MWJlZjk3ZiIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRTpcXNCU0L7QutGD0LzQtdC90YLRi1xc0KHQstC+0LTQutCwLnBkZiIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAiYWN0aW9uIjogItCX0LDQv9C40YHRjCDQtNCw0L3QvdGL0YUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJyZWNvcmRJZCI6IDEwMDh9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNToyNloiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCg0LXQtdGB0YLRgC5kb2N4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0KfRgtC10L3QuNC1INC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwOX0KeyJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDU6MTJaIiwgInNlc3Npb24iOiAiYmRiNDI3YTctYjNhNy01ODBkLWE5MDgtZDE5OTkxYmVmOTdmIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJFOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQn9C70LDQvS54bHN4IiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInR5cGUiOiAidHJhbnNmZXIiLCAiZXZpZGVuY2UiOiAibWF0Y2hpbmdDb250ZW50IiwgInNvdXJjZVJlY29yZElkIjogMTAwNywgImRlc3RpbmF0aW9uUmVjb3JkSWQiOiAxMTAyLCAiZGVzdGluYXRpb24iOiAiQzpcXFVzZXJzXFxQdWJsaWNcXERvY3VtZW50c1xcVVNCLUF1ZGl0LUluYm94XFzQn9C70LDQvS54bHN4IiwgInNoYTI1NiI6ICI3NjhkZWRkMDU3NTIwNDMxODk0NmFlYzRiNzNiZjhmZGE2NDhkZmJhNzQwNDk3YjdhMmU4OTZkZTVjODQyYjEyIn0KeyJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDU6MjZaIiwgInNlc3Npb24iOiAiYmRiNDI3YTctYjNhNy01ODBkLWE5MDgtZDE5OTkxYmVmOTdmIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJFOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQoNC10LXRgdGC0YAuZG9jeCIsICJwcm9jZXNzIjogIkM6XFxXaW5kb3dzXFxleHBsb3Jlci5leGUiLCAibG9nRXBvY2giOiAiZGVtby1lcG9jaCIsICJ0eXBlIjogInRyYW5zZmVyIiwgImV2aWRlbmNlIjogInBhaXJlZEFjY2VzcyIsICJzb3VyY2VSZWNvcmRJZCI6IDEwMDksICJkZXN0aW5hdGlvblJlY29yZElkIjogMTEwNSwgImRlc3RpbmF0aW9uIjogIkM6XFxVc2Vyc1xcUHVibGljXFxEb2N1bWVudHNcXFVTQi1BdWRpdC1JbmJveFxc0KDQtdC10YHRgtGALmRvY3gifQp7InR5cGUiOiAiYXJjaGl2ZUF1ZGl0IiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowODoxMFoiLCAiYXJjaGl2ZSI6ICJ1c2ItMjAyNjExMTdUMDIxMTMwWi0xMjM0NTY3ODkwYWM0YjA4YTU2NmIyMTIzNDU2Nzg5MC5qc29ubCIsICJwYXRoIjogIkM6XFxQcm9ncmFtRGF0YVxcTG9jYWxVc2JBdWRpdFxcRGF0YVxcQXJjaGl2ZVxcdXNiLTIwMjYxMTE3VDAyMTEzMFotMTIzNDU2Nzg5MGFjNGIwOGE1NjZiMjEyMzQ1Njc4OTAuanNvbmwiLCAic291cmNlIjogIldpbmRvd3MgU2VjdXJpdHkiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJhY3Rpb24iOiAi0JfQsNC/0LjRgdGMINC00LDQvdC90YvRhSIsICJyZXN1bHQiOiAi0J7RgtC60LDQt9Cw0L3QviDQsiDQtNC+0YHRgtGD0L/QtSIsICJldmVudElkIjogNDY1NiwgInJlY29yZElkIjogMTIwMCwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXFN5c3RlbTMyXFxub3RlcGFkLmV4ZSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIn0KeyJ0eXBlIjogImFyY2hpdmVBdWRpdCIsICJ0aW1lIjogIjIwMjYtMTEtMjFUMDU6MDg6MTFaIiwgImFyY2hpdmUiOiAidXNiLTIwMjYxMTE3VDAyMTEzMFotMTIzNDU2Nzg5MGFjNGIwOGE1NjZiMjEyMzQ1Njc4OTAuanNvbmwiLCAicGF0aCI6ICJDOlxcUHJvZ3JhbURhdGFcXExvY2FsVXNiQXVkaXRcXERhdGFcXEFyY2hpdmVcXHVzYi0yMDI2MTExN1QwMjExMzBaLTEyMzQ1Njc4OTBhYzRiMDhhNTY2YjIxMjM0NTY3ODkwLmpzb25sIiwgInNvdXJjZSI6ICJVU0ItQXVkaXQiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7RgtCy0LXRgtGB0YLQstC10L3QvdGL0LkiLCAiYWN0aW9uIjogItCj0LTQsNC70LXQvdC40LUg0LDRgNGF0LjQstCwIiwgInJlc3VsdCI6ICLQkNGA0YXQuNCyINGD0LTQsNC70ZHQvTogdXNiLTIwMjYxMTE3VDAyMTEzMFotMTIzNDU2Nzg5MGFjNGIwOGE1NjZiMjEyMzQ1Njc4OTAuanNvbmwiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcU3lzdGVtMzJcXFdpbmRvd3NQb3dlclNoZWxsXFx2MS4wXFxwb3dlcnNoZWxsLmV4ZSJ9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNjowMVoiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCX0LDRj9Cy0LrQsC50eHQiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMTEwfQp7InRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNjowMVoiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCX0LDRj9Cy0LrQsC50eHQiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAidHlwZSI6ICJ0cmFuc2ZlciIsICJldmlkZW5jZSI6ICJvYnNlcnZlZE1hdGNoaW5nQ29udGVudCIsICJzb3VyY2VSZWNvcmRJZCI6IDExMTAsICJkZXN0aW5hdGlvbiI6ICJDOlxcVXNlcnNcXFB1YmxpY1xcRG9jdW1lbnRzXFxVU0ItQXVkaXQtSW5ib3hcXNCX0LDRj9Cy0LrQsC50eHQiLCAic2hhMjU2IjogIjc2OGRlZGQwNTc1MjA0MzE4OTQ2YWVjNGI3M2JmOGZkYTY0OGRmYmE3NDA0OTdiN2EyZTg5NmRlNWM4NDJiMTIiLCAiZGVzdGluYXRpb25DaGFuZ2UiOiAiQ3JlYXRlZCIsICJ1aWQiOiAiZGVtby1ub3RpZmljYXRpb24tMCJ9CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNjowMloiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCn0LXRgNGC0ZHQti56aXAiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMTExfQp7InRpbWUiOiAiMjAyNi0xMS0yMVQwNTowNjowMloiLCAic2Vzc2lvbiI6ICJiZGI0MjdhNy1iM2E3LTU4MGQtYTkwOC1kMTk5OTFiZWY5N2YiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkU6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCn0LXRgNGC0ZHQti56aXAiLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAidHlwZSI6ICJ0cmFuc2ZlciIsICJldmlkZW5jZSI6ICJvYnNlcnZlZENyZWF0aW9uIiwgInNvdXJjZVJlY29yZElkIjogMTExMSwgImRlc3RpbmF0aW9uIjogIkM6XFxVc2Vyc1xcUHVibGljXFxEb2N1bWVudHNcXFVTQi1BdWRpdC1JbmJveFxc0KfQtdGA0YLRkdC2LnppcCIsICJkZXN0aW5hdGlvbkNoYW5nZSI6ICJDcmVhdGVkIiwgInVpZCI6ICJkZW1vLW5vdGlmaWNhdGlvbi0xIiwgInNvdXJjZUJ5dGVzIjogODQwMDAwMCwgImRlc3RpbmF0aW9uQnl0ZXMiOiA4MDAwMDAwfQo=</script>
 <script type="application/octet-stream" class="log-source" data-name="QXJjaGl2ZS8yMDI2LTExLTE3Lmpzb25s">eyJ0eXBlIjogImNvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE3VDAyOjA1OjAwWiIsICJzZXNzaW9uIjogImE5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMiIsICJkZXZpY2VJZCI6ICJVU0JTVE9SXFxEaXNrJlZlbl9EZW1vJlByb2RfVHJhaW5pbmdEaXNrXFxERU1PLUExMDcmMCIsICJzZXJpYWwiOiAiREVNTy1BMTA3IiwgIm1vZGVsIjogItCj0YfQtdCx0L3Ri9C5INC90LDQutC+0L/QuNGC0LXQu9GMIEEiLCAidm9sdW1lcyI6IFt7ImxldHRlciI6ICJFOiIsICJwYXRocyI6IFsiRTpcXCIsICJcXFxcP1xcVm9sdW1le2E5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMn1cXCIsICJcXERldmljZVxcSGFyZGRpc2tWb2x1bWU2Il19XX0KeyJ0eXBlIjogImRpc2Nvbm5lY3QiLCAidGltZSI6ICIyMDI2LTExLTE3VDAyOjExOjMwWiIsICJzZXNzaW9uIjogImE5ZDRmMzA1LWY4ZGMtNWEyMy1iYzBiLTgyNDhhNDMyOThlMiJ9CnsidHlwZSI6ICJjb25uZWN0IiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMToxMDowMFoiLCAic2Vzc2lvbiI6ICJmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmIiLCAiZGV2aWNlSWQiOiAiVVNCU1RPUlxcRGlzayZWZW5fRGVtbyZQcm9kX1RyYWluaW5nRGlza1xcREVNTy1BMTA3JjAiLCAic2VyaWFsIjogIkRFTU8tQTEwNyIsICJtb2RlbCI6ICLQo9GH0LXQsdC90YvQuSDQvdCw0LrQvtC/0LjRgtC10LvRjCBBIiwgInZvbHVtZXMiOiBbeyJsZXR0ZXIiOiAiRjoiLCAicGF0aHMiOiBbIkY6XFwiLCAiXFxcXD9cXFZvbHVtZXtmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmJ9XFwiLCAiXFxEZXZpY2VcXEhhcmRkaXNrVm9sdW1lNyJdfV19CnsidHlwZSI6ICJmaWxlIiwgInRpbWUiOiAiMjAyNi0xMS0xOVQwMToxMDoxMloiLCAic2Vzc2lvbiI6ICJmNTg1NWYyMy0xYWJhLTVhNjktOGQzNC03ZDBmMDMxNGNjNmIiLCAiYWNjb3VudCI6ICJBUk0tREVNT1xc0J7Qv9C10YDQsNGC0L7RgCIsICJwYXRoIjogIkY6XFzQlNC+0LrRg9C80LXQvdGC0YtcXNCf0LvQsNC9Lnhsc3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDAxfQp7InR5cGUiOiAiZmlsZSIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDE6MTA6MTlaIiwgInNlc3Npb24iOiAiZjU4NTVmMjMtMWFiYS01YTY5LThkMzQtN2QwZjAzMTRjYzZiIiwgImFjY291bnQiOiAiQVJNLURFTU9cXNCe0L/QtdGA0LDRgtC+0YAiLCAicGF0aCI6ICJGOlxc0JTQvtC60YPQvNC10L3RgtGLXFzQodCy0L7QtNC60LAucGRmIiwgInByb2Nlc3MiOiAiQzpcXFdpbmRvd3NcXGV4cGxvcmVyLmV4ZSIsICJhY3Rpb24iOiAi0JfQsNC/0LjRgdGMINC00LDQvdC90YvRhSIsICJsb2dFcG9jaCI6ICJkZW1vLWVwb2NoIiwgInJlY29yZElkIjogMTAwMn0KeyJ0eXBlIjogImZpbGUiLCAidGltZSI6ICIyMDI2LTExLTE5VDAxOjEwOjI2WiIsICJzZXNzaW9uIjogImY1ODU1ZjIzLTFhYmEtNWE2OS04ZDM0LTdkMGYwMzE0Y2M2YiIsICJhY2NvdW50IjogIkFSTS1ERU1PXFzQntC/0LXRgNCw0YLQvtGAIiwgInBhdGgiOiAiRjpcXNCU0L7QutGD0LzQtdC90YLRi1xc0KDQtdC10YHRgtGALmRvY3giLCAicHJvY2VzcyI6ICJDOlxcV2luZG93c1xcZXhwbG9yZXIuZXhlIiwgImFjdGlvbiI6ICLQp9GC0LXQvdC40LUg0LTQsNC90L3Ri9GFIiwgImxvZ0Vwb2NoIjogImRlbW8tZXBvY2giLCAicmVjb3JkSWQiOiAxMDAzfQp7InR5cGUiOiAiZGlzY29ubmVjdCIsICJ0aW1lIjogIjIwMjYtMTEtMTlUMDE6MjE6MzBaIiwgInNlc3Npb24iOiAiZjU4NTVmMjMtMWFiYS01YTY5LThkMzQtN2QwZjAzMTRjYzZiIn0K</script>
-<script type="application/octet-stream" id="report-meta">eyJzY29wZSI6ImFsbCIsImhvc3QiOiJBUk0tREVNTyIsImRlbW8iOnRydWUsImFyY2hpdmUiOiIiLCJwcm9ibGVtcyI6W10sInRpbWUiOiIyMDI2LTExLTIyVDA2OjQ3OjM5LjE0MzY4ODQrMDA6MDAifQ==</script>
+<script type="application/octet-stream" id="report-meta">eyJzY29wZSI6ImFsbCIsImhvc3QiOiJBUk0tREVNTyIsImRlbW8iOnRydWUsImFyY2hpdmUiOiIiLCJwcm9ibGVtcyI6W10sInRpbWUiOiIyMDI2LTExLTI0VDA0OjQ0OjM0LjkxNzA4MjgrMDA6MDAifQ==</script>
 
 <script>
 'use strict';
@@ -47,11 +55,12 @@ const reportTime = Date.parse(meta.time);
 const scopeLabel=meta.scope==='archive'?'Архив '+str(meta.archive):meta.scope==='active'?'Только текущий журнал':'Текущий журнал и архивы';
 $('as-of').textContent = [scopeLabel,meta.demo ? 'Пример АРМ' : meta.host, Number.isFinite(reportTime) ? formatTime(reportTime) : ''].filter(Boolean).join(' · ');
 $('demo').hidden = !meta.demo;
+$('archive-scope-note').hidden=meta.scope!=='archive';
 const notices = (meta.problems || []).map(message=>({time:NaN,message}));
-const sessions = new Map(), seen = new Set(), seenFile = new Set();
+const sessions = new Map(), seen = new Set(), seenFile = new Set(), archiveEvents=[];
 let totalFiles = 0, totalChanges = 0;
 function getSession(id){
-    if(!sessions.has(id)) sessions.set(id,{key:id,start:null,end:null,unknown:false,items:[],model:'',deviceId:'',serial:'',volumes:[],roots:new Set(),volumeTime:-Infinity});
+    if(!sessions.has(id)) sessions.set(id,{key:id,start:null,end:null,unknown:false,items:[],transfers:[],model:'',deviceId:'',serial:'',volumes:[],roots:new Set(),volumeTime:-Infinity});
     return sessions.get(id);
 }
 // Имена томов Windows встречаются с буквами дисков, GUID, в формате NT и в виде папок монтирования.
@@ -110,13 +119,23 @@ function groupChanges(s){
 function addRecord(record){
     if(!record || typeof record!=='object') return false;
     const ms = Date.parse(record.time), type = record.type;
-    if(!Number.isFinite(ms) || !['status','connect','disconnect','end_unknown','file'].includes(type)) return false;
-    if(type!=='status' && (typeof record.session!=='string' || !record.session)) return false;
+    if(!Number.isFinite(ms) || !['status','connect','disconnect','end_unknown','file','transfer','archiveAudit'].includes(type)) return false;
+    if(type!=='status' && type!=='archiveAudit' && (typeof record.session!=='string' || !record.session)) return false;
     if(record.uid){if(seen.has(record.uid)) return true; seen.add(record.uid)}
-    if(type==='file' && record.recordId!=null && record.logEpoch!=null){
-        const key = JSON.stringify([record.logEpoch,record.recordId]);
+    if(type==='transfer' && record.logEpoch!=null && record.sourceRecordId!=null && record.destinationRecordId!=null){
+        const key=JSON.stringify([type,record.logEpoch,record.sourceRecordId,record.destinationRecordId]);
+        if(seenFile.has(key))return true;
+        seenFile.add(key);
+    }
+    if((type==='file' || type==='archiveAudit') && record.recordId!=null && record.logEpoch!=null){
+        const key = JSON.stringify([type,record.logEpoch,record.recordId]);
         if(seenFile.has(key)) return true;
         seenFile.add(key);
+    }
+    // Доступ к архивам проверяется даже на АРМ без подключённых носителей.
+    if(type==='archiveAudit'){
+        archiveEvents.push({...record,time:ms});
+        return true;
     }
     if(type==='status' && (record.kind!=='volumes' || !record.session)){
         notices.push({time:ms,message:str(record.message) || 'Служебное событие'}); return true;
@@ -138,6 +157,8 @@ function addRecord(record){
             s.endSource=str(record.endSource);
             s.lastSeen=Date.parse(record.lastSeen);
         }
+    } else if(type==='transfer'){
+        s.transfers.push({...record,time:ms});
     } else if(type==='file'){
         const e={time:ms,account:str(record.account),action:str(record.action),path:str(record.path),process:str(record.process),change:changeAction(record)};
         s.items.push(e); totalFiles++;
@@ -204,8 +225,9 @@ function state(s){return s.end===null ? (s.start===null || meta.scope==='archive
 const stateNames={opened:'Открыт',closed:'Извлечён',unknown:'Не определено'};
 for(const s of sessions.values()){
     s.items.sort((a,b)=>b.time-a.time);
+    s.transfers.sort((a,b)=>b.time-a.time);
     s.changes=groupChanges(s);totalChanges+=s.changes.length;
-    s.recent=s.start ?? s.end ?? s.items[0]?.time ?? 0;
+    s.recent=s.start ?? s.end ?? Math.max(s.items[0]?.time ?? 0,s.transfers[0]?.time ?? 0);
     const deviceKey = s.deviceId ? JSON.stringify([norm(s.deviceId),norm(s.serial)]) : 'session:'+s.key;
     if(!allDevices.has(deviceKey))allDevices.set(deviceKey,{key:deviceKey,model:s.model,deviceId:s.deviceId,serial:s.serial,sessions:[]});
     allDevices.get(deviceKey).sessions.push(s);
@@ -216,8 +238,9 @@ for(const d of allDevices.values()){
 }
 notices.sort((a,b)=>(Number.isFinite(b.time)?b.time:Infinity)-(Number.isFinite(a.time)?a.time:Infinity));
 $('total-devices').textContent=nf.format(allDevices.size);$('total-sessions').textContent=nf.format(sessions.size);
-const pageSize = {device:15,session:15,file:40,notice:15};
-const page = {device:0,session:0,file:0,notice:0};
+archiveEvents.sort((a,b)=>b.time-a.time);
+const pageSize = {device:15,session:15,file:40,notice:15,archive:20,transfer:20};
+const page = {device:0,session:0,file:0,notice:0,archive:0,transfer:0};
 let selectedDevice='',selectedSession='',visible=[],key='',lower=-Infinity,upper=Infinity;
 let showAll=false;
 function fileRows(s){return showAll?s.items:s.changes}
@@ -250,7 +273,29 @@ function drawNotices(){
     for(const n of paged(notices,'notice'))list.append(el('li',(Number.isFinite(n.time)?formatTime(n.time)+' · ':'')+n.message));
     buttons('notice-pages','notice',notices.length,drawNotices);
 }
-function fileMatches(e){return [e.account,e.path,e.action,e.process].some(v=>norm(v).includes(key))}
+function fileMatches(e){return [e.account,e.path,e.action,e.process,e.destination,e.sha256].some(v=>norm(v).includes(key))}
+function drawArchiveAudit(){
+    const matches=archiveEvents.filter(e=>e.time>=lower && e.time<=upper && (!key ||
+        [e.archive,e.path,e.account,e.actorSid,e.action,e.result,e.source,e.process,e.requestId,e.recordId,e.eventId].some(v=>norm(v).includes(key))));
+    const body=$('archives').tBodies[0];body.replaceChildren();
+    for(const e of paged(matches,'archive')){
+        const tr=el('tr');cell(tr,formatTime(e.time),'time');
+        const who=cell(tr,e.account || e.actorSid || '—');
+        if(e.account && e.actorSid)who.title=str(e.actorSid);
+        const action=cell(tr,e.action || '—');
+        action.append(el('div',e.result || 'Результат не зафиксирован','small'));
+        const path=cell(tr,e.path || e.archive || '—','mono');path.title=str(e.path || e.archive);
+        const source=cell(tr,e.source || '—');
+        if(e.eventId)source.append(el('div','Событие Windows '+e.eventId,'small'));
+        if(e.process)source.append(el('div',e.process,'mono'));
+        if(e.requestId)source.title='Запрос '+e.requestId;
+        body.append(tr);
+    }
+    $('archive-caption').textContent=nf.format(matches.length)+' из '+nf.format(archiveEvents.length);
+    $('empty-archives').hidden=matches.length>0;
+    $('empty-archives').textContent=archiveEvents.length?'В заданном периоде и по текущему поиску событий не найдено.':'В выбранных журналах нет записей о действиях с архивами.';
+    buttons('archive-pages','archive',matches.length,drawArchiveAudit);
+}
 function dateBound(value,end){
     if(!value)return end?Infinity:-Infinity;
     const parts=value.split('-').map(Number);
@@ -264,13 +309,15 @@ function filterReport(keepSelection=false){
     $('total-files-label').textContent=countLabel;$('session-files-label').textContent=countLabel;
     key=norm($('search').value.trim());lower=dateBound($('from').value,false);upper=dateBound($('to').value,true);
     $('range-error').textContent=lower>upper?'Начальная дата позже конечной. Проверьте период.':'';
-    visible=[];page.device=0;page.session=0;page.file=0;
+    visible=[];page.device=0;page.session=0;page.file=0;page.archive=0;page.transfer=0;
+    drawArchiveAudit();
     for(const d of allDevices.values()){
         const deviceMatch=!key || [d.deviceId,d.serial,d.model].some(v=>norm(v).includes(key));
         const hits=d.sessions.filter(s=>{
-            const start=s.start ?? Math.min(s.end ?? Infinity,s.items[s.items.length-1]?.time ?? Infinity);
+            const start=s.start ?? Math.min(s.end ?? Infinity,s.items[s.items.length-1]?.time ?? Infinity,s.transfers[s.transfers.length-1]?.time ?? Infinity);
             const end=s.end ?? (Number.isFinite(reportTime)? reportTime:Infinity);
-            return lower<=upper && start<=upper && end>=lower && (deviceMatch || fileRows(s).some(e=>e.time>=lower && e.time<=upper && fileMatches(e)));
+            const matches=e=>e.time>=lower && e.time<=upper && fileMatches(e);
+            return lower<=upper && start<=upper && end>=lower && (deviceMatch || fileRows(s).some(matches) || s.transfers.some(matches));
         });
         if(hits.length)visible.push({device:d,hits,deviceMatch});
     }
@@ -303,7 +350,7 @@ function volumes(s){
 // Для выбранного СНИ показываем время подключения, состояние и тома каждого сеанса.
 function drawSessions(){
     const v=visible.find(x=>x.device.key===selectedDevice);
-    $('history').hidden=!v;$('operations').hidden=!v;if(!v)return;
+    $('history').hidden=!v;$('operations').hidden=!v;$('outgoing').hidden=!v;if(!v)return;
     $('device-id').textContent=v.device.deviceId||'Не зафиксирован';$('serial').textContent=v.device.serial||'Не предоставлен устройством';
     $('history-caption').textContent=v.device.model || '';
     const body=$('sessions').tBodies[0];body.replaceChildren();
@@ -322,7 +369,41 @@ function drawSessions(){
         else if(meta.scope==='archive' && s.end===null)st.append(el('div','В выбранном архиве нет конца сеанса','small'));
         cell(tr,volumes(s),'mono');cell(tr,nf.format(fileRows(s).length));
     }
-    buttons('session-pages','session',v.hits.length,drawSessions);drawFiles();
+    buttons('session-pages','session',v.hits.length,drawSessions);drawTransfers();drawFiles();
+}
+// Каждая строка связывает два пути. Совпадение событий и совпадение байтов различаются в отчёте.
+let transferSession='';
+function drawTransfers(){
+    const s=sessions.get(selectedSession);if(!s)return;
+    if(transferSession!==s.key){page.transfer=0;transferSession=s.key}
+    const v=visible.find(x=>x.device.key===selectedDevice);
+    const hits=s.transfers.filter(e=>e.time>=lower && e.time<=upper && (v.deviceMatch || fileMatches(e)));
+    const body=$('transfers').tBodies[0];body.replaceChildren();
+    for(const e of paged(hits,'transfer')){
+        const tr=el('tr');cell(tr,formatTime(e.time),'time');cell(tr,e.path || '—','mono');cell(tr,e.destination || '—','mono');
+        const created=e.evidence==='observedCreation',observed=created || e.evidence==='observedMatchingContent';
+        const identical=e.evidence==='matchingContent' || e.evidence==='observedMatchingContent',paired=e.evidence==='pairedAccess';
+        const basis=cell(tr,identical?'Содержимое совпало':paired?'Вероятный перенос':created?'Возможный перенос':'Основание не указано');
+        if(created)basis.append(el('div','Появился одноимённый файл','small'));
+        if(identical || created){
+            const change=e.destinationChange==='Created'?'Создание файла':e.destinationChange==='Renamed'?'Переименование файла':'';
+            basis.append(el('div',observed?['Уведомление папки назначения',change].filter(Boolean).join(' · '):'Чтение и запись в журнале Windows','small'));
+        }
+        if(created && Number.isSafeInteger(e.sourceBytes) && Number.isSafeInteger(e.destinationBytes))
+            basis.append(el('div','Размер при проверке '+nf.format(e.sourceBytes)+' → '+nf.format(e.destinationBytes)+' байт','small'));
+        if(identical && e.sha256){
+            const digest=el('details'),summary=el('summary','SHA-256');
+            digest.append(summary,el('span',e.sha256,'mono'));basis.append(digest);
+        }else if(paired)basis.append(el('div','Совпали признаки чтения и записи','small'));
+        const who=cell(tr,e.account || '—');
+        if(e.process)who.append(el('div',e.process,'mono'));
+        if(observed)who.append(el('div','Только чтение с носителя. Автор записи неизвестен.','small'));
+        body.append(tr);
+    }
+    $('transfer-caption').textContent=nf.format(hits.length)+' из '+nf.format(s.transfers.length);
+    $('empty-transfers').hidden=hits.length>0;
+    $('empty-transfers').textContent=s.transfers.length?'В заданном периоде и по текущему поиску переносов не найдено.':'Для этого подключения связать чтение с файлом в папке назначения не удалось.';
+    buttons('transfer-pages','transfer',hits.length,drawTransfers);
 }
 function drawFiles(){
     const s=sessions.get(selectedSession);if(!s)return;
@@ -351,7 +432,7 @@ for(const k of ['from','to'])$(k).addEventListener('change',filterReport);
 $('reset').onclick=()=>{clearTimeout(filterTimer);for(const k of ['search','from','to'])$(k).value='';$('file-mode').value='changes';filterReport()};
 $('export').onclick=()=>{
     const copy=document.documentElement.cloneNode(true);
-    for(const sel of ['table tbody','#notice-list','#device-pages','#session-pages','#file-pages','#notice-pages'])copy.querySelectorAll(sel).forEach(node=>node.replaceChildren());
+    for(const sel of ['table tbody','#notice-list','#device-pages','#session-pages','#file-pages','#notice-pages','#archive-pages','#transfer-pages'])copy.querySelectorAll(sel).forEach(node=>node.replaceChildren());
     const url=URL.createObjectURL(new Blob(['<!doctype html>\n',copy.outerHTML],{type:'text/html;charset=utf-8'}));
     const a=el('a');a.href=url;a.download='Журнал USB.html';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 };
